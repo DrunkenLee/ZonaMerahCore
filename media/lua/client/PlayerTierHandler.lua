@@ -6,9 +6,85 @@ require "SpeedFramework"
 PlayerTierHandler = {
   historyData = {}
 }
-
--- List of tier options for admins to assign
 local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend", "Immortal", "Mythic", "Godlike" }
+
+local function saveTierDataToFile(username, tierData)
+  local filePath = "player_tier_data.ini"
+  local data = {}
+
+  -- Read existing data from file if it exists
+  local file = getFileReader(filePath, true)
+  if file then
+      local line = file:readLine()
+      while line do
+          local user, hoursSurvived, tierValue = line:match("([^,]+),([^,]+),([^,]+)")
+          data[user] = { hoursSurvived = tonumber(hoursSurvived), tierValue = tonumber(tierValue) }
+          line = file:readLine()
+      end
+      file:close()
+  end
+
+  -- Update data with new tier data
+  data[username] = tierData
+
+  -- Write updated data back to file
+  local fileWriter = getFileWriter(filePath, true, false)
+  if fileWriter then
+      for user, tierData in pairs(data) do
+          fileWriter:write(string.format("%s,%d,%d\n", user, tierData.hoursSurvived, tierData.tierValue))
+      end
+      fileWriter:close()
+  else
+      error("Failed to open file for writing: " .. filePath)
+  end
+end
+
+local function loadTierDataFromFile(username)
+  local filePath = "player_tier_data.ini"
+  local file = getFileReader(filePath, true)
+  if not file then return nil end
+
+  local data = {}
+  local line = file:readLine()
+  while line do
+      local user, hoursSurvived, tierValue = line:match("([^,]+),([^,]+),([^,]+)")
+      data[user] = { hoursSurvived = tonumber(hoursSurvived), tierValue = tonumber(tierValue) }
+      line = file:readLine()
+  end
+  file:close()
+
+  return data[username]
+end
+
+function PlayerTierHandler.recordPlayerTier(player)
+  if not player then return nil end
+  local username = player:getUsername()
+  local tierValue = PlayerTierHandler.getPlayerTierValue(player)
+  local hoursSurvived = player:getHoursSurvived()
+  local recordedTier = {
+      hoursSurvived = hoursSurvived,
+      tierValue = tierValue
+  }
+  print("Recorded tier data: " .. username .. " - " .. hoursSurvived .. " - " .. tierValue)
+  saveTierDataToFile(username, recordedTier)
+  player:Say("Tier data is recorded for " .. username)
+  return recordedTier
+end
+
+function PlayerTierHandler.reassignRecordedTier(player)
+  if not player then return nil end
+  local username = player:getUsername()
+  local recordedTier = loadTierDataFromFile(username)
+
+  if recordedTier then
+      player:setHoursSurvived(recordedTier.hoursSurvived)
+      local modData = player:getModData()
+      modData.PlayerTierValue = recordedTier.tierValue
+      player:Say("Your tier and survival time have been reassigned based on recorded data.")
+  else
+      player:Say("No recorded tier data found for reassignment.")
+  end
+end
 
 -- Function to assign tier based on the PlayerConfig file
 function PlayerTierHandler.assignPlayerTier(player)
@@ -54,6 +130,14 @@ function PlayerTierHandler.setPlayerTier(admin, targetPlayer, tier)
       modData.PlayerTierValue = 8
   end
 
+  -- Save the updated tier data to the file
+  local username = targetPlayer:getUsername()
+  local recordedTier = {
+      hoursSurvived = targetPlayer:getHoursSurvived(),
+      tierValue = modData.PlayerTierValue
+  }
+  saveTierDataToFile(username, recordedTier)
+
   if admin then
       admin:Say("Successfully set " .. targetPlayer:getUsername() .. "'s tier to " .. tier)
   end
@@ -65,39 +149,6 @@ function PlayerTierHandler.getPlayerTierValue(player)
   if not player then return nil end
   local modData = player:getModData()
   return modData.PlayerTierValue or 1 -- Default to Tier Value 1 if not set
-end
-
-function PlayerTierHandler.recordPlayerTier(player)
-  if not player then return nil end
-  local username = player:getUsername()
-  local tierValue = PlayerTierHandler.getPlayerTierValue(player)
-  local hoursSurvived = player:getHoursSurvived()
-  local recordedTier = {
-    username = username,
-    hoursSurvived = hoursSurvived,
-    tierValue = tierValue
-  }
-  print("Recorded tier data: " .. username .. " - " .. hoursSurvived .. " - " .. tierValue)
-  PlayerTierHandler.historyData[username] = recordedTier
-  player:Say("Tier data is recorded for " .. username)
-  return recordedTier
-end
-
--- PlayerTierHandler.recordPlayerTier(getPlayer())
-
-function PlayerTierHandler.reassignRecordedTier(player)
-  if not player then return nil end
-  local username = player:getUsername()
-  local recordedTier = PlayerTierHandler.historyData[username]
-
-  if recordedTier then
-    player:setHoursSurvived(recordedTier.hoursSurvived)
-    local modData = player:getModData()
-    modData.PlayerTierValue = recordedTier.tierValue
-    player:Say("Your tier and survival time have been reassigned based on recorded data.")
-  else
-    player:Say("No recorded tier data found for reassignment.")
-  end
 end
 
 function PlayerTierHandler.getPlayerTier(player)
@@ -220,16 +271,16 @@ function PlayerTierHandler.updatePlayerTierBasedOnSurvivalDays(player)
   elseif survivalDays > 20 and survivalDays <= 30 then
       newTier = "Champion"
       newTierValue = 4
-  elseif survivalDays > 35 and survivalDays <= 59 then
+  elseif survivalDays > 30 and survivalDays <= 36 then
       newTier = "Legend"
       newTierValue = 5
-  elseif survivalDays > 60 and survivalDays <= 89 then
+  elseif survivalDays > 36 and survivalDays <= 61 then
       newTier = "Immortal"
       newTierValue = 6
-  elseif survivalDays > 90 and survivalDays <= 119 then
+  elseif survivalDays > 61 and survivalDays <= 91 then
       newTier = "Mythic"
       newTierValue = 7
-  elseif survivalDays > 120 then
+  elseif survivalDays > 91 then
       newTier = "Godlike"
       newTierValue = 8
   end
@@ -250,8 +301,13 @@ function PlayerTierHandler.debugSetSurvivalTime(player, hours)
   player:Say("Survival time set to " .. hours .. " hours. Tier updated to: " .. PlayerTierHandler.getPlayerTier(player))
 end
 
+function PlayerTierHandler.clearHistoryData()
+    PlayerTierHandler.historyData = {}
+    print("All player tier history data has been cleared.")
+end
+
 -- Hook into the EveryTenMinutes event to give XP boost based on tier and update tier based on survival days
-Events.EveryHours.Add(function()
+Events.EveryTenMinutes.Add(function()
   local players = getOnlinePlayers()
   for i = 0, players:size() - 1 do
       local player = players:get(i)

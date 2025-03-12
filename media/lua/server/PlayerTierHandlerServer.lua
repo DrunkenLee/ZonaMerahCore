@@ -40,7 +40,7 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
             player:getTraits():add("ThickSkinned")
         end
         if not player:HasTrait("LowThirst") then
-            player:getTraits():add("Low Thirst")
+            player:getTraits():add("LowThirst")
         end
         if not player:HasTrait("LightEater") then
             player:getTraits():add("Light Eater")
