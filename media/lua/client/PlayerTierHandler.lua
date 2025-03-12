@@ -144,6 +144,14 @@ function PlayerTierHandler.setPlayerTier(admin, targetPlayer, tier)
   targetPlayer:Say("Your tier has been updated to: " .. tier)
 end
 
+-- Function to save a player's progress
+function PlayerTierHandler.savePlayerProgress(admin, targetPlayer)
+    PlayerTierHandler.recordPlayerTier(targetPlayer)
+    if admin then
+        admin:Say("Successfully saved " .. targetPlayer:getUsername() .. "'s progress.")
+    end
+end
+
 -- Function to expose the modData for other mods
 function PlayerTierHandler.getPlayerTierValue(player)
   if not player then return nil end
@@ -176,6 +184,14 @@ function PlayerTierHandler.addTierOptionsToMenu(context, admin, targetPlayer)
             end
         )
     end
+    -- Add option to save player's progress
+    context:addOption(
+        "Save " .. targetPlayer:getUsername() .. "'s Progress",
+        admin,
+        function()
+            PlayerTierHandler.savePlayerProgress(admin, targetPlayer)
+        end
+    )
 end
 
 -- Function to render the admin menu for assigning tiers
