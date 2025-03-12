@@ -1,0 +1,10 @@
+VERSION = 1,
+
+option TierHandler.TierName
+{
+    type = string,
+    default = Server Points,
+
+    page = ServerPoints,
+    translation = ServerPoints_PointsName
+}
