@@ -238,7 +238,7 @@ end
 function PlayerTierHandler.debugSetSurvivalTime(player, hours)
   player:setHoursSurvived(hours)
   PlayerTierHandler.updatePlayerTierBasedOnSurvivalDays(player)
-  player:Say("Survival time set to " .. hours. " hours. Tier updated to: " .. PlayerTierHandler.getPlayerTier(player))
+  player:Say("Survival time set to " .. hours .. " hours. Tier updated to: " .. PlayerTierHandler.getPlayerTier(player))
 end
 
 function PlayerTierHandler.clearHistoryData()
