@@ -274,41 +274,55 @@ function PlayerTierHandler.updatePlayerTierBasedOnSurvivalDays(player)
       return -- Do not update the tier if it was set manually
   end
 
-  local survivalDays = player:getHoursSurvived() / 24
-  local newTier = "Newbies"
-  local newTierValue = 1
+  -- Fetching and Updating Title
+  PlayerTitleHandler.getPlayerTitle(player, function(title)
+      local survivalDays = player:getHoursSurvived() / 24
+      local newTier = "Newbies"
+      local newTierValue = 1
 
-  if survivalDays > 5 and survivalDays <= 15 then
-      newTier = "Adventurer"
-      newTierValue = 2
-  elseif survivalDays > 15 and survivalDays <= 20 then
-      newTier = "Veteran"
-      newTierValue = 3
-  elseif survivalDays > 20 and survivalDays <= 30 then
-      newTier = "Champion"
-      newTierValue = 4
-  elseif survivalDays > 30 and survivalDays <= 36 then
-      newTier = "Legend"
-      newTierValue = 5
-  elseif survivalDays > 36 and survivalDays <= 61 then
-      newTier = "Immortal"
-      newTierValue = 6
-  elseif survivalDays > 61 and survivalDays <= 91 then
-      newTier = "Mythic"
-      newTierValue = 7
-  elseif survivalDays > 91 then
-      newTier = "Godlike"
-      newTierValue = 8
-  end
+      if survivalDays > 5 and survivalDays <= 15 then
+          newTier = "Adventurer"
+          newTierValue = 2
+      elseif survivalDays > 15 and survivalDays <= 20 then
+          newTier = "Veteran"
+          newTierValue = 3
+      elseif survivalDays > 20 and survivalDays <= 30 then
+          newTier = "Champion"
+          newTierValue = 4
+      elseif survivalDays > 30 and survivalDays <= 36 then
+          newTier = "Legend"
+          newTierValue = 5
+      elseif survivalDays > 36 and survivalDays <= 61 then
+          newTier = "Immortal"
+          newTierValue = 6
+      elseif survivalDays > 61 and survivalDays <= 91 then
+          newTier = "Mythic"
+          newTierValue = 7
+      elseif survivalDays > 91 then
+          newTier = "Godlike"
+          newTierValue = 8
+      end
 
-  local currentTier = modData.PlayerTier
-  local currentTierValue = modData.PlayerTierValue
-  if currentTier ~= newTier then
-      modData.PlayerTier = newTier
-      modData.PlayerTierValue = newTierValue
-      local intSurvivalDays = math.floor(survivalDays)
-      player:Say("You have survived and proved yourself for " .. intSurvivalDays .. " days and have been promoted to " .. newTier .. ", Tier Value: " .. newTierValue)
-  end
+      -- Ensure minimum tier for VIP and VVIP
+      if title == "VIP" and newTierValue < 5 then
+          player:setHoursSurvived(31 * 24)
+          newTier = "Legend"
+          newTierValue = 5
+      elseif title == "VVIP" and newTierValue < 7 then
+          player:setHoursSurvived(62 * 24)
+          newTier = "Mythic"
+          newTierValue = 7
+      end
+
+      local currentTier = modData.PlayerTier
+      local currentTierValue = modData.PlayerTierValue
+      if currentTier ~= newTier then
+          modData.PlayerTier = newTier
+          modData.PlayerTierValue = newTierValue
+          local intSurvivalDays = math.floor(survivalDays)
+          player:Say("You have survived and proved yourself for " .. intSurvivalDays .. " days and have been promoted to " .. newTier)
+      end
+  end)
 end
 
 function PlayerTierHandler.debugSetSurvivalTime(player, hours)

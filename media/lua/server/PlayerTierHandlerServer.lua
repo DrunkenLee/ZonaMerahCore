@@ -13,7 +13,7 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
             player:getTraits():add("Desensitized")
         end
         if player:HasTrait("FearOfBlood") then
-            player:getTraits():remove("Fear of Blood")
+            player:getTraits():remove("FearOfBlood")
         end
         if player:HasTrait("Cowardly") then
             player:getTraits():remove("Cowardly")
@@ -43,7 +43,7 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
             player:getTraits():add("LowThirst")
         end
         if not player:HasTrait("LightEater") then
-            player:getTraits():add("Light Eater")
+            player:getTraits():add("LightEater")
         end
         if player:HasTrait("ThinSkinned") then
             player:getTraits():remove("ThinSkinned")
