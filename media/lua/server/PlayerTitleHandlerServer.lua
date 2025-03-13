@@ -128,7 +128,7 @@ Events.OnClientCommand.Add(function(module, command, player, args)
         local username = args.username
         local title = PlayerTitleHandlerServer.loadTitleFromFile(username)
         sendServerCommand(player, "PlayerTitleHandlerServer", "sendTitle", { username = username, title = title })
-        print("[ZonaMerahCore] Sent title to " .. username .. ": " .. title)
+        -- print("[ZonaMerahCore] Sent title to " .. username .. ": " .. title)
     end
 end)
 
@@ -141,10 +141,10 @@ local function PrintOnlinePlayers()
         local title = PlayerTitleHandlerServer.loadTitleFromFile(username)
         if title == "VIP" then
           GlobalMethods.addPlayerPoints(username, 15)
-          print("[ZonaMerahCore] Added 15 points to VIP " .. username)
+          -- print("[ZonaMerahCore] Added 15 points to VIP " .. username)
         elseif title == "VVIP" then
           GlobalMethods.addPlayerPoints(username, 30)
-          print("[ZonaMerahCore] Added 30 points to VVIP " .. username)
+          -- print("[ZonaMerahCore] Added 30 points to VVIP " .. username)
         end
     end
 end
