@@ -59,12 +59,15 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
         if not player:HasTrait("Resilient") then
             player:getTraits():add("Resilient")
         end
+    elseif tier == "Newbies" then
+        player:setUnlimitedEndurance(false)
     end
 end
 
 Events.EveryHours.Add(function()
     for i = 0, getNumActivePlayers() - 1 do
         local player = getSpecificPlayer(i)
+        -- local username = player:getUsername()
         if player then
             ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
         end

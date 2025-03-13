@@ -50,35 +50,35 @@ end
 
 -- Function to load the player's title from a file
 function PlayerTitleHandlerServer.loadTitleFromFile(username)
-  local filePath = "server-titles.ini"
-  local file = getFileReader(filePath, true)
-  if not file then
-      print("[ZonaMerahCore] File not found: " .. filePath)
-      return nil
-  end
+    local filePath = "server-titles.ini"
+    local file = getFileReader(filePath, true)
+    if not file then
+        print("[ZonaMerahCore] File not found: " .. filePath)
+        return nil
+    end
 
-  local data = {}
-  local line = file:readLine()
-  while line do
-      local user, savedTitle = line:match("([^,]+),([^,]+)")
-      if user and savedTitle then
-          data[user] = savedTitle
-          print("[ZonaMerahCore] Loaded title for user: " .. user .. " -> " .. savedTitle)
-      else
-          print("[ZonaMerahCore] Failed to parse line: " .. line)
-      end
-      line = file:readLine()
-  end
-  file:close()
+    local data = {}
+    local line = file:readLine()
+    while line do
+        local user, savedTitle = line:match("([^,]+),([^,]+)")
+        if user and savedTitle then
+            data[user] = savedTitle
+            print("[ZonaMerahCore] Loaded title for user: " .. user .. " -> " .. savedTitle)
+        else
+            print("[ZonaMerahCore] Failed to parse line: " .. line)
+        end
+        line = file:readLine()
+    end
+    file:close()
 
-  local title = data[username]
-  if title then
-      print("[ZonaMerahCore] Title found for user " .. username .. ": " .. title)
-  else
-      print("[ZonaMerahCore] No title found for user " .. username)
-  end
+    local title = data[username]
+    if title then
+        print("[ZonaMerahCore] Title found for user " .. username .. ": " .. title)
+    else
+        print("[ZonaMerahCore] No title found for user " .. username)
+    end
 
-  return title
+    return title
 end
 
 -- Function to set a player's title dynamically
@@ -122,13 +122,33 @@ Events.OnFillWorldObjectContextMenu.Add(function(playerIndex, context)
     end
 end)
 
+-- Function to handle client requests for player titles
 Events.OnClientCommand.Add(function(module, command, player, args)
-  if module == "PlayerTitleHandlerServer" and command == "getTitle" then
-      local username = args.username
-      local title = PlayerTitleHandlerServer.loadTitleFromFile(username)
-      sendServerCommand(player, "PlayerTitleHandlerServer", "sendTitle", { username = username, title = title })
-      print("[ZonaMerahCore] Sent title to " .. username .. ": " .. title)
-  end
+    if module == "PlayerTitleHandlerServer" and command == "getTitle" then
+        local username = args.username
+        local title = PlayerTitleHandlerServer.loadTitleFromFile(username)
+        sendServerCommand(player, "PlayerTitleHandlerServer", "sendTitle", { username = username, title = title })
+        print("[ZonaMerahCore] Sent title to " .. username .. ": " .. title)
+    end
 end)
+
+
+local function PrintOnlinePlayers()
+    local players = getOnlinePlayers()
+    for i = 0, players:size() - 1 do
+        local player = players:get(i)
+        local username = player:getUsername()
+        local title = PlayerTitleHandlerServer.loadTitleFromFile(username)
+        if title == "VIP" then
+          GlobalMethods.addPlayerPoints(username, 15)
+          print("[ZonaMerahCore] Added 15 points to VIP " .. username)
+        elseif title == "VVIP" then
+          GlobalMethods.addPlayerPoints(username, 30)
+          print("[ZonaMerahCore] Added 30 points to VVIP " .. username)
+        end
+    end
+end
+
+Events.EveryHours.Add(PrintOnlinePlayers)
 
 return PlayerTitleHandlerServer
