@@ -18,15 +18,15 @@ end
 function PlayerTierHandler.claimKillReward(player)
   local username = player:getUsername()
   local killCount = PlayerKillCountServer.loadKillCountFromFile(username)
-  local survivorHours = (killCount / 1000) * 12
-  local surviveDay = math.floor(survivorHours / 24)
+  local survivorHours = (killCount / 100) * 10
+  local survivorHoursDecimal = string.format("%.2f", survivorHours)
 
   -- Reset kill count to 0
   PlayerKillCountServer.saveKillCountToFile(username, 0)
 
   -- Set survived hours
   player:setHoursSurvived(player:getHoursSurvived() + survivorHours)
-  player:Say("You have claimed your kill reward! Your kill score has been reset, and you have gained " .. surviveDay .. " survival hours.")
+  player:Say("You have claimed your kill reward! Your kill score has been reset, and you have gained " .. survivorHoursDecimal .. " survival hours.")
 end
 
 local function saveTierDataToFile(username, tierData)
