@@ -133,22 +133,22 @@ Events.OnClientCommand.Add(function(module, command, player, args)
 end)
 
 
-local function PrintOnlinePlayers()
-    local players = getOnlinePlayers()
-    for i = 0, players:size() - 1 do
-        local player = players:get(i)
-        local username = player:getUsername()
-        local title = PlayerTitleHandlerServer.loadTitleFromFile(username)
-        if title == "VIP" then
-          GlobalMethods.addPlayerPoints(username, 15)
-          -- print("[ZonaMerahCore] Added 15 points to VIP " .. username)
-        elseif title == "VVIP" then
-          GlobalMethods.addPlayerPoints(username, 30)
-          -- print("[ZonaMerahCore] Added 30 points to VVIP " .. username)
-        end
-    end
-end
+-- local function PrintOnlinePlayers()
+--     local players = getOnlinePlayers()
+--     for i = 0, players:size() - 1 do
+--         local player = players:get(i)
+--         local username = player:getUsername()
+--         local title = PlayerTitleHandlerServer.loadTitleFromFile(username)
+--         if title == "VIP" then
+--           GlobalMethods.addPlayerPoints(username, 15)
+--           -- print("[ZonaMerahCore] Added 15 points to VIP " .. username)
+--         elseif title == "VVIP" then
+--           GlobalMethods.addPlayerPoints(username, 30)
+--           -- print("[ZonaMerahCore] Added 30 points to VVIP " .. username)
+--         end
+--     end
+-- end
 
-Events.EveryHours.Add(PrintOnlinePlayers)
+-- Events.EveryHours.Add(PrintOnlinePlayers)
 
 return PlayerTitleHandlerServer
