@@ -71,4 +71,4 @@ local function OnServerCommand(module, command, arguments)
 
 end
 -- Register the function to be called every in-game day
-Events.EveryOneDay.Add(OnServerCommand)
+Events.EveryDays.Add(OnServerCommand)

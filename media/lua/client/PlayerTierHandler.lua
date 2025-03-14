@@ -3,6 +3,7 @@ require "ISContextMenu"
 require "Translate/EN/Sandbox_EN"
 require "SpeedFramework"
 require "PlayerKillCountServer"
+require "PlayerTitleHandler"
 
 PlayerTierHandler = {
   historyData = {}
@@ -13,6 +14,20 @@ function PlayerTierHandler.checkPlayerKillScore(player)
   local username = player:getUsername()
   local killCount = PlayerKillCountServer.loadKillCountFromFile(username)
   player:Say("Your current kill score is: " .. killCount)
+end
+
+function PlayerTierHandler.claimKillReward(player)
+  local username = player:getUsername()
+  local killCount = PlayerKillCountServer.loadKillCountFromFile(username)
+  local survivorHours = (killCount / 1000) * 12
+  local surviveDay = math.floor(survivorHours / 24)
+
+  -- Reset kill count to 0
+  PlayerKillCountServer.saveKillCountToFile(username, 0)
+
+  -- Set survived hours
+  player:setHoursSurvived(player:getHoursSurvived() + survivorHours)
+  player:Say("You have claimed your kill reward! Your kill score has been reset, and you have gained " .. surviveDay .. " survival hours.")
 end
 
 local function saveTierDataToFile(username, tierData)
@@ -234,6 +249,9 @@ function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
 
   -- Add "Check My Kill Score" option to the context menu
   context:addOption("Check My Kill Score", player, PlayerTierHandler.checkPlayerKillScore, player)
+
+  -- Add "Claim Kill Reward" option to the context menu
+  context:addOption("Claim Kill Reward", player, PlayerTierHandler.claimKillReward, player)
 end
 
 function PlayerTierHandler.giveXPBoost(player)
