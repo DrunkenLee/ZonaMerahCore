@@ -2,11 +2,18 @@ require "PlayerConfig"
 require "ISContextMenu"
 require "Translate/EN/Sandbox_EN"
 require "SpeedFramework"
+require "PlayerKillCountServer"
 
 PlayerTierHandler = {
   historyData = {}
 }
 local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend", "Immortal", "Mythic", "Godlike" }
+
+function PlayerTierHandler.checkPlayerKillScore(player)
+  local username = player:getUsername()
+  local killCount = PlayerKillCountServer.loadKillCountFromFile(username)
+  player:Say("Your current kill score is: " .. killCount)
+end
 
 local function saveTierDataToFile(username, tierData)
   local filePath = "player_tier_data.ini"
@@ -65,7 +72,6 @@ function PlayerTierHandler.recordPlayerTier(player)
       hoursSurvived = hoursSurvived,
       tierValue = tierValue
   }
-  print("Recorded tier data: " .. username .. " - " .. hoursSurvived .. " - " .. tierValue)
   saveTierDataToFile(username, recordedTier)
   player:Say("Tier data is recorded for " .. username)
   return recordedTier
@@ -220,11 +226,14 @@ end
 
 -- Function to add "Check My Tier" option to the player's context menu
 function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
-    local player = getSpecificPlayer(playerIndex)
-    if not player then return end
+  local player = getSpecificPlayer(playerIndex)
+  if not player then return end
 
-    -- Add "Check My Tier" option to the context menu
-    context:addOption("Check My Tier", player, PlayerTierHandler.checkPlayerTier, player)
+  -- Add "Check My Tier" option to the context menu
+  context:addOption("Check My Tier", player, PlayerTierHandler.checkPlayerTier, player)
+
+  -- Add "Check My Kill Score" option to the context menu
+  context:addOption("Check My Kill Score", player, PlayerTierHandler.checkPlayerKillScore, player)
 end
 
 function PlayerTierHandler.giveXPBoost(player)

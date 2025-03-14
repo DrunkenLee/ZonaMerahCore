@@ -7,13 +7,13 @@ function PlayerTitleHandler.getPlayerTitle(player, callback)
 
     -- Send a request to the server to get the player's title
     sendClientCommand("PlayerTitleHandlerServer", "getTitle", { username = username })
-    print("Sent request to server for title")
+    -- print("Sent request to server for title")
 
     -- Listen for the server's response
     local function onServerCommand(module, command, args)
         if module == "PlayerTitleHandlerServer" and command == "sendTitle" and args.username == username then
             local title = args.title or "DEFAULT"
-            print("Received title from server: " .. title .. " for " .. username)
+            -- print("Received title from server: " .. title .. " for " .. username)
             Events.OnServerCommand.Remove(onServerCommand)
             PlayerTitleHandler.storedTitles[username] = title
             callback(title) -- Call the callback function with the title

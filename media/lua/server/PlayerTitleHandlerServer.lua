@@ -53,7 +53,7 @@ function PlayerTitleHandlerServer.loadTitleFromFile(username)
     local filePath = "server-titles.ini"
     local file = getFileReader(filePath, true)
     if not file then
-        print("[ZonaMerahCore] File not found: " .. filePath)
+        -- print("[ZonaMerahCore] File not found: " .. filePath)
         return nil
     end
 
@@ -63,9 +63,9 @@ function PlayerTitleHandlerServer.loadTitleFromFile(username)
         local user, savedTitle = line:match("([^,]+),([^,]+)")
         if user and savedTitle then
             data[user] = savedTitle
-            print("[ZonaMerahCore] Loaded title for user: " .. user .. " -> " .. savedTitle)
+            -- print("[ZonaMerahCore] Loaded title for user: " .. user .. " -> " .. savedTitle)
         else
-            print("[ZonaMerahCore] Failed to parse line: " .. line)
+            -- print("[ZonaMerahCore] Failed to parse line: " .. line)
         end
         line = file:readLine()
     end
@@ -73,9 +73,9 @@ function PlayerTitleHandlerServer.loadTitleFromFile(username)
 
     local title = data[username]
     if title then
-        print("[ZonaMerahCore] Title found for user " .. username .. ": " .. title)
+        -- print("[ZonaMerahCore] Title found for user " .. username .. ": " .. title)
     else
-        print("[ZonaMerahCore] No title found for user " .. username)
+        -- print("[ZonaMerahCore] No title found for user " .. username)
     end
 
     return title
