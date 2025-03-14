@@ -1,5 +1,6 @@
 require "PlayerConfig"
 require "PlayerTierHandler"
+require "PlayerTitleHandler"
 
 ServerPlayerTierHandler = {}
 
