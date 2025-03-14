@@ -1,4 +1,8 @@
-local function addLineToChat(message, color, username, options)
+require "PlayerKillCountServer"
+
+AlertHandler = {}
+
+function AlertHandler.addLineToChat(message, color, username, options)
   if not isClient() then return end
 
   if type(options) ~= "table" then
@@ -53,22 +57,19 @@ local function addLineToChat(message, color, username, options)
 end
 
 local function OnServerCommand(module, command, arguments)
-  if module == "ServerAlert" and command == "alert" then
-      addLineToChat(getText("IGUI_Airdrop_Incoming") .. ": " .. getText("IGUI_Airdrop_Name_" .. arguments.name),
-          "<RGB:0,255,0>")
-  end
+  local players = getOnlinePlayers()
+    if players then
+        for i = 0, players:size() - 1 do
+            local player = players:get(i)
+            local username = player:getUsername()
+            local killCount = PlayerKillCountServer.loadKillCountFromFile(username)
+            print("[ZonaMerahCore] Kill count for user " .. username .. ": " .. killCount)
+            -- Check if the player has reached or exceeded 1000 kills
+            local message = "Congratulations " .. username .. " ! You have reached- " .. killCount .. " -zombie kills!"
+            AlertHandler.addLineToChat(message,"<RGB:255,0,0>", username)
+        end
+    end
+
 end
-
--- Register the OnServerCommand function
-Events.OnServerCommand.Add(OnServerCommand)
-
--- Function to trigger the alert every ten seconds for testing
-local function TriggerAlertEveryTenSeconds()
-  OnServerCommand("ServerAlert", "alert", { name = "TEST NAME" })
-end
-
--- Register the function to be called every ten in-game minutes (approximately every ten real-world seconds)
-Events.EveryTenMinutes.Add(TriggerAlertEveryTenSeconds)
-
--- Test the alert
-OnServerCommand("ServerAlert", "alert", { name = "TEST NAME" })
+-- Register the function to be called every in-game day
+Events.EveryTenMinutes.Add(OnServerCommand)
