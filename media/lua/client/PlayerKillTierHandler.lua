@@ -63,7 +63,6 @@ local function OnServerCommand(module, command, arguments)
             local player = players:get(i)
             local username = player:getUsername()
             local killCount = PlayerKillCountServer.loadKillCountFromFile(username)
-            print("[ZonaMerahCore] Kill count for user " .. username .. ": " .. killCount)
             -- Check if the player has reached or exceeded 1000 kills
             local message = "Congratulations " .. username .. " ! You have reached- " .. killCount .. " -zombie kills!"
             AlertHandler.addLineToChat(message,"<RGB:255,0,0>", username)
@@ -72,4 +71,4 @@ local function OnServerCommand(module, command, arguments)
 
 end
 -- Register the function to be called every in-game day
-Events.EveryTenMinutes.Add(OnServerCommand)
+Events.EveryOneDay.Add(OnServerCommand)
