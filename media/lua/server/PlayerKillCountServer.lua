@@ -1,6 +1,7 @@
 PlayerKillCountServer = {}
 local killCountFilePath = "server-zombie-kill-counts.ini"
 local zombieHitByPlayer = {}
+local killCountsInMemory = {}
 
 -- Function to save the player's zombie kill count to a file
 function PlayerKillCountServer.saveKillCountToFile(username, killCount)
@@ -34,6 +35,14 @@ function PlayerKillCountServer.saveKillCountToFile(username, killCount)
     end
 end
 
+-- Function to save all in-memory kill counts to the file
+function PlayerKillCountServer.saveAllKillCountsToFile()
+    for username, killCount in pairs(killCountsInMemory) do
+        PlayerKillCountServer.saveKillCountToFile(username, killCount)
+    end
+    print("[ZonaMerahCore] All in-memory kill counts have been saved to the file.")
+end
+
 -- Function to load the player's zombie kill count from a file
 function PlayerKillCountServer.loadKillCountFromFile(username)
     print("[ZonaMerahCore] Loading kill count for user: " .. username)
@@ -60,7 +69,7 @@ end
 -- Function to update the player's zombie kill count
 function PlayerKillCountServer.updateKillCount(player, isSprinter, hitHead)
     local username = player:getUsername()
-    local killCount = PlayerKillCountServer.loadKillCountFromFile(username)
+    local killCount = killCountsInMemory[username] or PlayerKillCountServer.loadKillCountFromFile(username)
     killCount = killCount + 1
     if isSprinter then
         killCount = killCount + 2 -- Increment by 3 in total for sprinters
@@ -68,10 +77,10 @@ function PlayerKillCountServer.updateKillCount(player, isSprinter, hitHead)
     if hitHead then
         killCount = killCount + 1
     end
-    print("[ZonaMerahCore] Updating kill count for user: " .. username .. " to: " .. killCount)
-    PlayerKillCountServer.saveKillCountToFile(username, killCount)
+    -- print("[ZonaMerahCore] Updating kill count for user: " .. username .. " to: " .. killCount)
+    killCountsInMemory[username] = killCount
     sendServerCommand(player, "PlayerKillCount", "updateKillCount", { killCount = killCount })
-    print("[ZonaMerahCore] Updated zombie kill count for user " .. username .. ": " .. killCount)
+    -- print("[ZonaMerahCore] Updated zombie kill count for user " .. username .. ": " .. killCount)
 end
 
 -- Event handler for hitting a zombie
@@ -82,7 +91,7 @@ local function OnHitZombie(zombie, attacker, bodyPart, weapon)
         local isSprinter = speedType == "3" -- Assuming "3" represents sprinters
         local hitHead = bodyPart == "Head"
         zombieHitByPlayer[zombieID] = { player = attacker, isSprinter = isSprinter, hitHead = hitHead }
-        print("[ZonaMerahCore] Player " .. attacker:getUsername() .. " hit zombie with ID " .. zombieID .. ". SpeedType: " .. tostring(speedType) .. ", IsSprinter: " .. tostring(isSprinter) .. ", HitHead: " .. tostring(hitHead))
+        -- print("[ZonaMerahCore] Player " .. attacker:getUsername() .. " hit zombie with ID " .. zombieID .. ". SpeedType: " .. tostring(speedType) .. ", IsSprinter: " .. tostring(isSprinter) .. ", HitHead: " .. tostring(hitHead))
     else
         print("[ZonaMerahCore] OnHitZombie called with invalid parameters")
     end
@@ -94,16 +103,19 @@ Events.OnZombieDead.Add(function(zombie)
         local zombieID = zombie:getOnlineID()
         local hitInfo = zombieHitByPlayer[zombieID]
         if hitInfo then
-            print("[ZonaMerahCore] Zombie with ID " .. zombieID .. " killed by player " .. hitInfo.player:getUsername())
+            -- print("[ZonaMerahCore] Zombie with ID " .. zombieID .. " killed by player " .. hitInfo.player:getUsername())
             PlayerKillCountServer.updateKillCount(hitInfo.player, hitInfo.isSprinter, hitInfo.hitHead)
             zombieHitByPlayer[zombieID] = nil -- Clear the entry after updating the kill count
         else
-            print("[ZonaMerahCore] Zombie with ID " .. zombieID .. " died but no player was recorded as the attacker")
+            -- print("[ZonaMerahCore] Zombie with ID " .. zombieID .. " died but no player was recorded as the attacker")
         end
     else
         print("[ZonaMerahCore] OnZombieDead called with invalid parameters")
     end
 end)
+
+-- Event to save all kill counts to the file every hour
+Events.EveryHours.Add(PlayerKillCountServer.saveAllKillCountsToFile)
 
 Events.OnHitZombie.Add(OnHitZombie)
 

@@ -65,7 +65,7 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
     end
 end
 
-Events.EveryHours.Add(function()
+Events.EveryDays.Add(function()
     for i = 0, getNumActivePlayers() - 1 do
         local player = getSpecificPlayer(i)
         -- local username = player:getUsername()
