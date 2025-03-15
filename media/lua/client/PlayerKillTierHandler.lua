@@ -56,8 +56,8 @@ function AlertHandler.addLineToChat(message, color, username, options)
     ISChat.addLineInChat(msg, 0)
 end
 
-local function OnServerCommand(module, command, args)
-    if module == "ServerAlert" and command == "alert" then
+function SendAlertChat(module, command, args)
+    if module == "ServerAlert" and command == "sendAlert" then
         AlertHandler.addLineToChat(args.message, args.color, args.username, args.options)
     end
 end
