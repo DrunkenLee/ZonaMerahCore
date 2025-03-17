@@ -43,6 +43,12 @@ function PlayerKillCountServer.saveAllKillCountsToFile()
     print("[ZonaMerahCore] All in-memory kill counts have been saved to the file.")
 end
 
+function PlayerKillCountServer.resetKillCountInMemory(username)
+  killCountsInMemory[username] = 0
+  PlayerKillCountServer.saveKillCountToFile(username, 0)
+  print("[ZonaMerahCore] Kill count in memory and file reset for user: " .. username)
+end
+
 -- Function to load the player's zombie kill count from a file
 function PlayerKillCountServer.loadKillCountFromFile(username)
     print("[ZonaMerahCore] Loading kill count for user: " .. username)

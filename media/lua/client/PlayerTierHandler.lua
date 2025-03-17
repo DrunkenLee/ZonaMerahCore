@@ -22,8 +22,7 @@ function PlayerTierHandler.claimKillReward(player)
   local survivorHoursDecimal = string.format("%.2f", survivorHours)
 
   -- Reset kill count to 0
-  PlayerKillCountServer.saveKillCountToFile(username, 0)
-  killCountsInMemory[username] = 0 -- Update in-memory kill count
+  PlayerKillCountServer.resetKillCountInMemory(username) -- Reset kill count in memory and file
 
   -- Set survived hours
   player:setHoursSurvived(player:getHoursSurvived() + survivorHours)
