@@ -348,8 +348,8 @@ function PlayerTierHandler.clearHistoryData()
     print("All player tier history data has been cleared.")
 end
 
--- Hook into the EveryTenMinutes event to give XP boost based on tier and update tier based on survival days
-Events.EveryHours.Add(function()
+-- Hook into the EVERY DAY event to give XP boost based on tier and update tier based on survival days
+Events.EveryDays.Add(function()
   local players = getOnlinePlayers()
   for i = 0, players:size() - 1 do
       local player = players:get(i)
