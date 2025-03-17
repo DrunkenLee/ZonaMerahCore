@@ -19,24 +19,6 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
         if player:HasTrait("Cowardly") then
             player:getTraits():remove("Cowardly")
         end
-    elseif tier == "Mythic" then
-        player:setUnlimitedEndurance(false)
-        if not player:HasTrait("Brave") then
-            player:getTraits():add("Brave")
-        end
-
-        if not player:HasTrait("Brawler") then
-            player:getTraits():add("Brawler")
-        end
-
-        if player:HasTrait("Cowardly") then
-          player:getTraits():remove("Cowardly")
-        end
-    elseif tier == "Immortal" then
-        player:setUnlimitedEndurance(false)
-        if not player:HasTrait("Hunter") then
-            player:getTraits():add("Hunter")
-        end
         if not player:HasTrait("ThickSkinned") then
             player:getTraits():add("ThickSkinned")
         end
@@ -55,11 +37,18 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
         if player:HasTrait("HighThirst") then
             player:getTraits():remove("HighThirst")
         end
+        if not player:HasTrait("Resilient") then
+          player:getTraits():add("Resilient")
+        end
+        if not player:HasTrait("Brave") then
+          player:getTraits():add("Brave")
+        end
+    elseif tier == "Mythic" then
+        player:setUnlimitedEndurance(false)
+    elseif tier == "Immortal" then
+        player:setUnlimitedEndurance(false)
     elseif tier == "Legend" then
         player:setUnlimitedEndurance(false)
-        if not player:HasTrait("Resilient") then
-            player:getTraits():add("Resilient")
-        end
     elseif tier == "Newbies" then
         player:setUnlimitedEndurance(false)
     end

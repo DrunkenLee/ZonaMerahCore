@@ -23,6 +23,7 @@ function PlayerTierHandler.claimKillReward(player)
 
   -- Reset kill count to 0
   PlayerKillCountServer.saveKillCountToFile(username, 0)
+  killCountsInMemory[username] = 0 -- Update in-memory kill count
 
   -- Set survived hours
   player:setHoursSurvived(player:getHoursSurvived() + survivorHours)
