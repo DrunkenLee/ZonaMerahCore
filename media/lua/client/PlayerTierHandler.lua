@@ -8,6 +8,7 @@ PlayerTierHandler = {
   historyData = {}
 }
 local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend", "Immortal", "Mythic", "Godlike" }
+local serverDirectory = "c:/Users/Michael/Zomboid/ServerData/"
 
 function PlayerTierHandler.checkPlayerKillScore(player)
   local username = player:getUsername()
@@ -29,77 +30,60 @@ function PlayerTierHandler.claimKillReward(player)
   player:Say("You have claimed your kill reward! Your kill score has been reset, and you have gained " .. survivorHoursDecimal .. " survival hours.")
 end
 
-local function saveTierDataToFile(username, tierData)
-  local filePath = "player_tier_data.ini"
-  local data = {}
+function PlayerTierHandler.recordPlayerTier(player)
+  if not player then return nil end
+  local modData = player:getModData()
+  modData.PlayerTierValue = PlayerTierHandler.getPlayerTierValue(player)
+  modData.HoursSurvived = player:getHoursSurvived()
 
-  -- Read existing data from file if it exists
-  local file = getFileReader(filePath, true)
-  if file then
-      local line = file:readLine()
-      while line do
-          local user, hoursSurvived, tierValue = line:match("([^,]+),([^,]+),([^,]+)")
-          data[user] = { hoursSurvived = tonumber(hoursSurvived), tierValue = tonumber(tierValue) }
-          line = file:readLine()
-      end
-      file:close()
-  end
+  -- Save to .ini file
+  local username = player:getUsername()
+  local filePath = serverDirectory .. username .. "_tier.ini"
+  local file = getFileWriter(filePath, true, false)
+  file:write("PlayerTierValue=" .. modData.PlayerTierValue .. "\n")
+  file:write("HoursSurvived=" .. modData.HoursSurvived .. "\n")
+  file:close()
 
-  -- Update data with new tier data
-  data[username] = tierData
-
-  -- Write updated data back to file
-  local fileWriter = getFileWriter(filePath, true, false)
-  if fileWriter then
-      for user, tierData in pairs(data) do
-          fileWriter:write(string.format("%s,%d,%d\n", user, tierData.hoursSurvived, tierData.tierValue))
-      end
-      fileWriter:close()
-  else
-      error("Failed to open file for writing: " .. filePath)
-  end
+  player:Say("Tier data is recorded for " .. username)
 end
 
-local function loadTierDataFromFile(username)
-  local filePath = "player_tier_data.ini"
-  local file = getFileReader(filePath, true)
-  if not file then return nil end
+function PlayerTierHandler.loadPlayerTierFromFile(player)
+  if not player then return nil end
+  local username = player:getUsername()
+  local filePath = serverDirectory .. username .. "_tier.ini"
+  local file = getFileReader(filePath, false)
+  if not file then
+    player:Say("No saved tier data found.")
+    return
+  end
 
-  local data = {}
-  local line = file:readLine()
-  while line do
-      local user, hoursSurvived, tierValue = line:match("([^,]+),([^,]+),([^,]+)")
-      data[user] = { hoursSurvived = tonumber(hoursSurvived), tierValue = tonumber(tierValue) }
-      line = file:readLine()
+  local modData = player:getModData()
+  while true do
+    local line = file:readLine()
+    if not line then break end
+    local key, value = line:match("^(.-)=(.+)$")
+    if key == "PlayerTierValue" then
+      modData.PlayerTierValue = tonumber(value)
+    elseif key == "HoursSurvived" then
+      modData.HoursSurvived = tonumber(value)
+    end
   end
   file:close()
 
-  return data[username]
-end
-
-function PlayerTierHandler.recordPlayerTier(player)
-  if not player then return nil end
-  local username = player:getUsername()
-  local tierValue = PlayerTierHandler.getPlayerTierValue(player)
-  local hoursSurvived = player:getHoursSurvived()
-  local recordedTier = {
-      hoursSurvived = hoursSurvived,
-      tierValue = tierValue
-  }
-  saveTierDataToFile(username, recordedTier)
-  player:Say("Tier data is recorded for " .. username)
-  return recordedTier
+  if modData.HoursSurvived and modData.PlayerTierValue then
+    player:setHoursSurvived(modData.HoursSurvived)
+    player:Say("Your tier and survival time have been restored.")
+  else
+    player:Say("Failed to restore tier data.")
+  end
 end
 
 function PlayerTierHandler.reassignRecordedTier(player)
   if not player then return nil end
-  local username = player:getUsername()
-  local recordedTier = loadTierDataFromFile(username)
+  local modData = player:getModData()
 
-  if recordedTier then
-      player:setHoursSurvived(recordedTier.hoursSurvived)
-      local modData = player:getModData()
-      modData.PlayerTierValue = recordedTier.tierValue
+  if modData.HoursSurvived and modData.PlayerTierValue then
+      player:setHoursSurvived(modData.HoursSurvived)
       player:Say("Your tier and survival time have been reassigned based on recorded data.")
   else
       player:Say("No recorded tier data found for reassignment.")
@@ -149,14 +133,6 @@ function PlayerTierHandler.setPlayerTier(admin, targetPlayer, tier)
       targetPlayer:setHoursSurvived(121 * 24) -- 121 days
       modData.PlayerTierValue = 8
   end
-
-  -- Save the updated tier data to the file
-  local username = targetPlayer:getUsername()
-  local recordedTier = {
-      hoursSurvived = targetPlayer:getHoursSurvived(),
-      tierValue = modData.PlayerTierValue
-  }
-  saveTierDataToFile(username, recordedTier)
 
   if admin then
       admin:Say("Successfully set " .. targetPlayer:getUsername() .. "'s tier to " .. tier)
@@ -374,6 +350,7 @@ Events.OnFillWorldObjectContextMenu.Add(PlayerTierHandler.addPlayerTierMenu)
 -- Hook into player creation event to assign the tier on spawn
 Events.OnCreatePlayer.Add(function(playerIndex, player)
     PlayerTierHandler.assignPlayerTier(player)
+    PlayerTierHandler.loadPlayerTierFromFile(player)
 end)
 
 return PlayerTierHandler
