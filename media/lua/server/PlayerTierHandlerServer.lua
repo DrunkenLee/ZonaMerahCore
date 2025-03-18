@@ -117,6 +117,18 @@ function ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
   return hoursSurvived
 end
 
+function getPlayerFromUsername(username)
+  for i = 0, getNumActivePlayers() - 1 do
+      local player = getSpecificPlayer(i)
+      if player and player:getUsername() == username then
+          print("[ServerPlayerTierHandler] Player found: " .. username)
+          return player
+      end
+  end
+  print("[ServerPlayerTierHandler] Player not found: " .. username)
+  return nil
+end
+
 Events.OnClientCommand.Add(function(module, command, player, args)
   if module == "PlayerTierHandler" then
       if command == "saveSurvivedHours" then
@@ -124,9 +136,27 @@ Events.OnClientCommand.Add(function(module, command, player, args)
       elseif command == "loadSurvivedHours" then
           local hoursSurvived = ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
           player:setHoursSurvived(hoursSurvived)
+      elseif command == "applyUnlimitedEnduranceAndTrait" then
+          local targetPlayer = getPlayerFromUsername(args.username)
+          if targetPlayer then
+              ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(targetPlayer)
+          else
+              print("[ServerPlayerTierHandler] Player not found: " .. args.username)
+          end
       end
   end
 end)
+
+-- Helper function to get a player object by username
+function getPlayerFromUsername(username)
+  for i = 0, getNumActivePlayers() - 1 do
+      local player = getSpecificPlayer(i)
+      if player and player:getUsername() == username then
+          return player
+      end
+  end
+  return nil
+end
 
 Events.EveryDays.Add(function()
     for i = 0, getNumActivePlayers() - 1 do
