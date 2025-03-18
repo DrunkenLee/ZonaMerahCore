@@ -32,50 +32,20 @@ end
 
 function PlayerTierHandler.recordPlayerTier(player)
   if not player then return nil end
-  local modData = player:getModData()
-  modData.PlayerTierValue = PlayerTierHandler.getPlayerTierValue(player)
-  modData.HoursSurvived = player:getHoursSurvived()
 
-  -- Save to .ini file
-  local username = player:getUsername()
-  local filePath = serverDirectory .. username .. "_tier.ini"
-  local file = getFileWriter(filePath, true, false)
-  file:write("PlayerTierValue=" .. modData.PlayerTierValue .. "\n")
-  file:write("HoursSurvived=" .. modData.HoursSurvived .. "\n")
-  file:close()
+  -- Trigger server-side save
+  sendServerCommand("PlayerTierHandler", "saveSurvivedHours", {})
 
-  player:Say("Tier data is recorded for " .. username)
+  player:Say("Your tier data has been recorded on the server.")
 end
 
 function PlayerTierHandler.loadPlayerTierFromFile(player)
   if not player then return nil end
-  local username = player:getUsername()
-  local filePath = serverDirectory .. username .. "_tier.ini"
-  local file = getFileReader(filePath, false)
-  if not file then
-    player:Say("No saved tier data found.")
-    return
-  end
 
-  local modData = player:getModData()
-  while true do
-    local line = file:readLine()
-    if not line then break end
-    local key, value = line:match("^(.-)=(.+)$")
-    if key == "PlayerTierValue" then
-      modData.PlayerTierValue = tonumber(value)
-    elseif key == "HoursSurvived" then
-      modData.HoursSurvived = tonumber(value)
-    end
-  end
-  file:close()
+  -- Trigger server-side load
+  sendServerCommand("PlayerTierHandler", "loadSurvivedHours", {})
 
-  if modData.HoursSurvived and modData.PlayerTierValue then
-    player:setHoursSurvived(modData.HoursSurvived)
-    player:Say("Your tier and survival time have been restored.")
-  else
-    player:Say("Failed to restore tier data.")
-  end
+  player:Say("Requesting your tier data from the server...")
 end
 
 function PlayerTierHandler.reassignRecordedTier(player)

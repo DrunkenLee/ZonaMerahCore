@@ -54,6 +54,80 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
     end
 end
 
+-- Function to save the player's survived hours to a file
+function ServerPlayerTierHandler.savePlayerSurvivedHours(player)
+  if not player then return end
+  local username = player:getUsername()
+  local hoursSurvived = player:getHoursSurvived()
+
+  local filePath = "server-player-tier.ini"
+  local data = {}
+
+  -- Read existing data from the file
+  local file = getFileReader(filePath, true)
+  if file then
+      local line = file:readLine()
+      while line do
+          local user, hours = line:match("([^,]+),([^,]+)")
+          data[user] = tonumber(hours)
+          line = file:readLine()
+      end
+      file:close()
+  end
+
+  -- Update the data with the current player's survived hours
+  data[username] = hoursSurvived
+
+  -- Write the updated data back to the file
+  local fileWriter = getFileWriter(filePath, true, false)
+  if fileWriter then
+      for user, hours in pairs(data) do
+          fileWriter:write(string.format("%s,%d\n", user, hours))
+      end
+      fileWriter:close()
+      print("[ServerPlayerTierHandler] Saved survived hours for user: " .. username)
+  else
+      error("Failed to open file for writing: " .. filePath)
+  end
+end
+
+-- Function to load the player's survived hours from a file
+function ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
+  if not player then return end
+  local username = player:getUsername()
+
+  local filePath = "server-player-tier.ini"
+  local file = getFileReader(filePath, true)
+  if not file then
+      print("[ServerPlayerTierHandler] No saved data found for user: " .. username)
+      return 0
+  end
+
+  local data = {}
+  local line = file:readLine()
+  while line do
+      local user, hours = line:match("([^,]+),([^,]+)")
+      data[user] = tonumber(hours)
+      line = file:readLine()
+  end
+  file:close()
+
+  local hoursSurvived = data[username] or 0
+  print("[ServerPlayerTierHandler] Loaded survived hours for user: " .. username .. " - " .. hoursSurvived)
+  return hoursSurvived
+end
+
+Events.OnClientCommand.Add(function(module, command, player, args)
+  if module == "PlayerTierHandler" then
+      if command == "saveSurvivedHours" then
+          ServerPlayerTierHandler.savePlayerSurvivedHours(player)
+      elseif command == "loadSurvivedHours" then
+          local hoursSurvived = ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
+          player:setHoursSurvived(hoursSurvived)
+      end
+  end
+end)
+
 Events.EveryDays.Add(function()
     for i = 0, getNumActivePlayers() - 1 do
         local player = getSpecificPlayer(i)
