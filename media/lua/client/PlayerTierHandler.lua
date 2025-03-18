@@ -238,6 +238,12 @@ function PlayerTierHandler.addAdminMenu(playerIndex, context)
     end
 end
 
+function PlayerTierHandler.updateTierAndGiveXPBoost(player)
+  PlayerTierHandler.updatePlayerTierBasedOnSurvivalDays(player)
+  PlayerTierHandler.giveXPBoost(player)
+  player:Say("Your tier has been updated and boost applied.")
+end
+
 -- Function to add "Check My Tier" option to the player's context menu
 function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
   local player = getSpecificPlayer(playerIndex)
@@ -251,6 +257,9 @@ function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
 
   -- Add "Claim Kill Reward" option to the context menu
   context:addOption("Claim Kill Reward", player, PlayerTierHandler.claimKillReward, player)
+
+  -- Add "Update My Tier and Get XP Boost" option to the context menu
+  context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
 end
 
 function PlayerTierHandler.giveXPBoost(player)
