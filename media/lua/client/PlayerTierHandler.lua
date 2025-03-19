@@ -34,7 +34,7 @@ function PlayerTierHandler.recordPlayerTier(player)
   if not player then return nil end
 
   -- Trigger server-side save
-  sendServerCommand("PlayerTierHandler", "saveSurvivedHours", {})
+  sendClientCommand("PlayerTierHandler", "saveSurvivedHours", {})
 
   player:Say("Your tier data has been recorded on the server.")
 end
@@ -43,7 +43,7 @@ function PlayerTierHandler.loadPlayerTierFromFile(player)
   if not player then return nil end
 
   -- Trigger server-side load
-  sendServerCommand("PlayerTierHandler", "loadSurvivedHours", {})
+  sendClientCommand("PlayerTierHandler", "loadSurvivedHours", {})
 
   player:Say("Requesting your tier data from the server...")
 end
@@ -171,7 +171,6 @@ function PlayerTierHandler.addAdminMenu(playerIndex, context)
         submenu
     )
     local players = getOnlinePlayers()
-    -- Add each connected player to the submenu
     for i = 0, players:size() - 1 do
         local player = players:get(i)
         local username = player:getUsername()
@@ -289,9 +288,8 @@ function PlayerTierHandler.updatePlayerTierBasedOnSurvivalDays(player)
       modData.PlayerTierValue = newTierValue
       local intSurvivalDays = math.floor(survivalDays)
       player:Say("You have survived and proved yourself for " .. intSurvivalDays .. " days and have been promoted to " .. newTier)
-
       -- Trigger server-side function to apply traits and endurance
-      sendServerCommand(player, "PlayerTierHandler", "applyUnlimitedEnduranceAndTrait", { username = player:getUsername() })
+      sendClientCommand("PlayerTierHandler", "applyUnlimitedEnduranceAndTrait", { username = player:getUsername() })
   end
 end
 
@@ -307,12 +305,13 @@ function PlayerTierHandler.clearHistoryData()
 end
 
 -- Hook into the EVERY DAY event to give XP boost based on tier and update tier based on survival days
-Events.EveryDays.Add(function()
+Events.EveryTenMinutes.Add(function()
   local players = getOnlinePlayers()
   for i = 0, players:size() - 1 do
       local player = players:get(i)
       PlayerTierHandler.updatePlayerTierBasedOnSurvivalDays(player)
       PlayerTierHandler.giveXPBoost(player)
+      ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
   end
 end)
 

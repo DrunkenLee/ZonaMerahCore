@@ -61,5 +61,3 @@ function SendAlertChat(module, command, args)
         AlertHandler.addLineToChat(args.message, args.color, args.username, args.options)
     end
 end
-
-Events.OnServerCommand.Add(OnServerCommand)
