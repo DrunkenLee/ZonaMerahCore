@@ -305,7 +305,7 @@ function PlayerTierHandler.clearHistoryData()
 end
 
 -- Hook into the EVERY DAY event to give XP boost based on tier and update tier based on survival days
-Events.EveryTenMinutes.Add(function()
+Events.EveryHours.Add(function()
   local players = getOnlinePlayers()
   for i = 0, players:size() - 1 do
       local player = players:get(i)
