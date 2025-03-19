@@ -8,7 +8,6 @@ PlayerTierHandler = {
   historyData = {}
 }
 local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend", "Immortal", "Mythic", "Godlike" }
-local serverDirectory = "c:/Users/Michael/Zomboid/ServerData/"
 
 function PlayerTierHandler.checkPlayerKillScore(player)
   local username = player:getUsername()
@@ -34,7 +33,7 @@ function PlayerTierHandler.recordPlayerTier(player)
   if not player then return nil end
 
   -- Trigger server-side save
-  sendServerCommand("PlayerTierHandler", "saveSurvivedHours", {})
+  sendClientCommand(player, "PlayerTierHandler", "saveSurvivedHours", {})
 
   player:Say("Your tier data has been recorded on the server.")
 end
@@ -74,40 +73,12 @@ end
 
 -- Function to assign a tier to a player dynamically
 function PlayerTierHandler.setPlayerTier(admin, targetPlayer, tier)
-  local modData = targetPlayer:getModData()
-  modData.PlayerTier = tier
+  if not targetPlayer then return end
 
-  -- Update survival time based on the tier
-  if tier == "Newbies" then
-      targetPlayer:setHoursSurvived(5 * 24) -- 5 days
-      modData.PlayerTierValue = 1
-  elseif tier == "Adventurer" then
-      targetPlayer:setHoursSurvived(10 * 24) -- 10 days
-      modData.PlayerTierValue = 2
-  elseif tier == "Veteran" then
-      targetPlayer:setHoursSurvived(17.5 * 24) -- 17.5 days
-      modData.PlayerTierValue = 3
-  elseif tier == "Champion" then
-      targetPlayer:setHoursSurvived(25 * 24) -- 25 days
-      modData.PlayerTierValue = 4
-  elseif tier == "Legend" then
-      targetPlayer:setHoursSurvived(36 * 24) -- 36 days
-      modData.PlayerTierValue = 5
-  elseif tier == "Immortal" then
-      targetPlayer:setHoursSurvived(61 * 24) -- 61 days
-      modData.PlayerTierValue = 6
-  elseif tier == "Mythic" then
-      targetPlayer:setHoursSurvived(91 * 24) -- 91 days
-      modData.PlayerTierValue = 7
-  elseif tier == "Godlike" then
-      targetPlayer:setHoursSurvived(121 * 24) -- 121 days
-      modData.PlayerTierValue = 8
-  end
-
-  if admin then
-      admin:Say("Successfully set " .. targetPlayer:getUsername() .. "'s tier to " .. tier)
-  end
-  targetPlayer:Say("Your tier has been updated to: " .. tier)
+  sendClientCommand(targetPlayer, "PlayerTierHandler", "setPlayerTier", {
+      username = targetPlayer:getUsername(),
+      tier = tier
+  })
 end
 
 -- Function to save a player's progress

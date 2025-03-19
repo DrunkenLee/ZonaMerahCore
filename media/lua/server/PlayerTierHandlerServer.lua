@@ -4,6 +4,52 @@ require "PlayerTitleHandler"
 
 ServerPlayerTierHandler = {}
 
+function ServerPlayerTierHandler.setPlayerTier(admin, targetPlayerUsername, tier)
+  local targetPlayer = getPlayerFromUsername(targetPlayerUsername)
+  if not targetPlayer then
+      if admin then
+          admin:Say("Player not found: " .. targetPlayerUsername)
+      end
+      print("[ServerPlayerTierHandler] Player not found: " .. targetPlayerUsername)
+      return
+  end
+
+  local modData = targetPlayer:getModData()
+  modData.PlayerTier = tier
+
+  -- Update survival time based on the tier
+  if tier == "Newbies" then
+      targetPlayer:setHoursSurvived(5 * 24) -- 5 days
+      modData.PlayerTierValue = 1
+  elseif tier == "Adventurer" then
+      targetPlayer:setHoursSurvived(10 * 24) -- 10 days
+      modData.PlayerTierValue = 2
+  elseif tier == "Veteran" then
+      targetPlayer:setHoursSurvived(17.5 * 24) -- 17.5 days
+      modData.PlayerTierValue = 3
+  elseif tier == "Champion" then
+      targetPlayer:setHoursSurvived(25 * 24) -- 25 days
+      modData.PlayerTierValue = 4
+  elseif tier == "Legend" then
+      targetPlayer:setHoursSurvived(36 * 24) -- 36 days
+      modData.PlayerTierValue = 5
+  elseif tier == "Immortal" then
+      targetPlayer:setHoursSurvived(61 * 24) -- 61 days
+      modData.PlayerTierValue = 6
+  elseif tier == "Mythic" then
+      targetPlayer:setHoursSurvived(91 * 24) -- 91 days
+      modData.PlayerTierValue = 7
+  elseif tier == "Godlike" then
+      targetPlayer:setHoursSurvived(121 * 24) -- 121 days
+      modData.PlayerTierValue = 8
+  end
+
+  if admin then
+      admin:Say("Successfully set " .. targetPlayerUsername .. "'s tier to " .. tier)
+  end
+  targetPlayer:Say("Your tier has been updated to: " .. tier)
+end
+
 -- Function to set unlimited endurance for GODLIKE tier and add a trait
 function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
     local tier = PlayerTierHandler.getPlayerTier(player) or "NO_TIER"
@@ -89,6 +135,8 @@ function ServerPlayerTierHandler.savePlayerSurvivedHours(player)
   else
       error("Failed to open file for writing: " .. filePath)
   end
+  print("[ServerPlayerTierHandler] Saved to server file survived hours for user: " .. username .. " - " .. hoursSurvived)
+  -- sendServerCommand(player, "PlayerTierHandler", "saveSurvivedHoursResponse", { hoursSurvived = hoursSurvived })
 end
 
 -- Function to load the player's survived hours from a file
@@ -136,6 +184,11 @@ Events.OnClientCommand.Add(function(module, command, player, args)
       elseif command == "loadSurvivedHours" then
           local hoursSurvived = ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
           player:setHoursSurvived(hoursSurvived)
+      elseif command == "setPlayerTier" then
+          local admin = player
+          local targetPlayerUsername = args.username
+          local tier = args.tier
+          ServerPlayerTierHandler.setPlayerTier(admin, targetPlayerUsername, tier)
       elseif command == "applyUnlimitedEnduranceAndTrait" then
           local targetPlayer = getPlayerFromUsername(args.username)
           if targetPlayer then
