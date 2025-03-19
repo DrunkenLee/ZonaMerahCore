@@ -262,7 +262,7 @@ function PlayerTierHandler.updatePlayerTierBasedOnSurvivalDays(player)
       player:Say("You have survived and proved yourself for " .. intSurvivalDays .. " days and have been promoted to " .. newTier)
 
       -- Trigger server-side function to apply traits and endurance
-      sendServerCommand(player, "PlayerTierHandler", "applyUnlimitedEnduranceAndTrait", { username = player:getUsername() })
+      sendClientCommand(player, "PlayerTierHandler", "applyUnlimitedEnduranceAndTrait", { username = player:getUsername() })
   end
 end
 
