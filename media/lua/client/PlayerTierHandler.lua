@@ -2,37 +2,14 @@ require "PlayerConfig"
 require "ISContextMenu"
 require "Translate/EN/Sandbox_EN"
 require "SpeedFramework"
-require "PlayerKillCountServer"
 
 PlayerTierHandler = {
   historyData = {}
 }
 local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend", "Immortal", "Mythic", "Godlike" }
-local serverDirectory = "c:/Users/Michael/Zomboid/ServerData/"
-
-function PlayerTierHandler.checkPlayerKillScore(player)
-  local username = player:getUsername()
-  local killCount = PlayerKillCountServer.loadKillCountFromFile(username) or 0
-  player:Say("Your current kill score is: " .. killCount)
-end
-
-function PlayerTierHandler.claimKillReward(player)
-  local username = player:getUsername()
-  local killCount = PlayerKillCountServer.loadKillCountFromFile(username)
-  local survivorHours = (killCount / 100) * 10
-  local survivorHoursDecimal = string.format("%.2f", survivorHours)
-
-  -- Reset kill count to 0
-  PlayerKillCountServer.resetKillCountInMemory(username) -- Reset kill count in memory and file
-
-  -- Set survived hours
-  player:setHoursSurvived(player:getHoursSurvived() + survivorHours)
-  player:Say("You have claimed your kill reward! Your kill score has been reset, and you have gained " .. survivorHoursDecimal .. " survival hours.")
-end
 
 function PlayerTierHandler.recordPlayerTier(player)
   if not player then return nil end
-
   -- Trigger server-side save
   sendClientCommand("PlayerTierHandler", "saveSurvivedHours", {})
 
@@ -196,12 +173,6 @@ function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
 
   -- Add "Check My Tier" option to the context menu
   context:addOption("Check My Tier", player, PlayerTierHandler.checkPlayerTier, player)
-
-  -- Add "Check My Kill Score" option to the context menu
-  context:addOption("Check My Kill Score", player, PlayerTierHandler.checkPlayerKillScore, player)
-
-  -- Add "Claim Kill Reward" option to the context menu
-  context:addOption("Claim Kill Reward", player, PlayerTierHandler.claimKillReward, player)
 
   -- Add "Update My Tier and Get XP Boost" option to the context menu
   context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
