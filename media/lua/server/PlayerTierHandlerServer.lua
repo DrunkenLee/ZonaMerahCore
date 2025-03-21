@@ -86,6 +86,7 @@ function ServerPlayerTierHandler.savePlayerSurvivedHours(player)
       end
       fileWriter:close()
       print("[ServerPlayerTierHandler] Saved survived hours for user: " .. username)
+      sendServerCommand(player, "PlayerTierHandler", "saveSurvivedHoursResponse", { username = username, hours = hoursSurvived })
   else
       error("Failed to open file for writing: " .. filePath)
   end

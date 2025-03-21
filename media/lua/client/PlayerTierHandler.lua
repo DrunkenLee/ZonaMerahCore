@@ -11,8 +11,15 @@ local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend
 function PlayerTierHandler.recordPlayerTier(player)
   if not player then return nil end
   -- Trigger server-side save
-  sendClientCommand("PlayerTierHandler", "saveSurvivedHours", {})
+  sendClientCommand("PlayerTierHandler", "saveSurvivedHours", {username = player:getUsername(), hours = player:getHoursSurvived()})
 
+  Events.OnServerCommand.Add(function(module, command, args)
+    if module == "PlayerTierHandler" and command == "saveSurvivedHoursResponse" then
+        username = args.username
+        hours = args.hours
+        print("[PlayerTierHandler] Player: " .. username .. " has survived for " .. hours .. " hours.")
+    end
+  end)
   player:Say("Your tier data has been recorded on the server.")
 end
 
@@ -260,7 +267,7 @@ function PlayerTierHandler.updatePlayerTierBasedOnSurvivalDays(player)
       local intSurvivalDays = math.floor(survivalDays)
       player:Say("You have survived and proved yourself for " .. intSurvivalDays .. " days and have been promoted to " .. newTier)
       -- Trigger server-side function to apply traits and endurance
-      sendClientCommand("PlayerTierHandler", "applyUnlimitedEnduranceAndTrait", { username = player:getUsername() })
+      -- sendClientCommand("PlayerTierHandler", "applyUnlimitedEnduranceAndTrait", { username = player:getUsername() })
   end
 end
 
