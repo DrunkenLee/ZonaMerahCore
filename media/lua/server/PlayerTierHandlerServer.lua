@@ -54,11 +54,11 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
     end
 end
 
--- Function to save the player's survived hours to a file
 function ServerPlayerTierHandler.savePlayerSurvivedHours(player)
   if not player then return end
   local username = player:getUsername()
   local hoursSurvived = player:getHoursSurvived()
+  local zombieKills = player:getZombieKills()
 
   local filePath = "server-player-tier.ini"
   local data = {}
@@ -68,31 +68,32 @@ function ServerPlayerTierHandler.savePlayerSurvivedHours(player)
   if file then
       local line = file:readLine()
       while line do
-          local user, hours = line:match("([^,]+),([^,]+)")
-          data[user] = tonumber(hours)
+          local user, hours, kills = line:match("([^,]+),([^,]+),([^,]*)")
+          data[user] = { hours = tonumber(hours), kills = tonumber(kills) or 0 }
           line = file:readLine()
       end
       file:close()
   end
 
-  -- Update the data with the current player's survived hours
-  data[username] = hoursSurvived
+  -- Update the data with the current player's information
+  data[username] = { hours = hoursSurvived, kills = zombieKills }
 
   -- Write the updated data back to the file
   local fileWriter = getFileWriter(filePath, true, false)
   if fileWriter then
-      for user, hours in pairs(data) do
-          fileWriter:write(string.format("%s,%d\n", user, hours))
+      for user, userData in pairs(data) do
+          fileWriter:write(string.format("%s,%d,%d\n", user, userData.hours, userData.kills))
       end
       fileWriter:close()
-      print("[ServerPlayerTierHandler] Saved survived hours for user: " .. username)
-      sendServerCommand(player, "PlayerTierHandler", "saveSurvivedHoursResponse", { username = username, hours = hoursSurvived })
+      print("[ServerPlayerTierHandler] Saved tier data for user: " .. username)
+      sendServerCommand(player, "PlayerTierHandler", "saveSurvivedHoursResponse",
+        { username = username, hours = hoursSurvived, zombieKills = zombieKills })
   else
       error("Failed to open file for writing: " .. filePath)
   end
 end
 
--- Function to load the player's survived hours from a file
+-- Function to load the player's tier data from a file
 function ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
   if not player then return end
   local username = player:getUsername()
@@ -101,21 +102,29 @@ function ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
   local file = getFileReader(filePath, true)
   if not file then
       print("[ServerPlayerTierHandler] No saved data found for user: " .. username)
-      return 0
+      sendServerCommand(player, "PlayerTierHandler", "loadSurvivedHoursResponse",
+          { username = username, hours = 0, zombieKills = 0 })
+      return 0, 0
   end
 
   local data = {}
   local line = file:readLine()
   while line do
-      local user, hours = line:match("([^,]+),([^,]+)")
-      data[user] = tonumber(hours)
+      local user, hours, kills = line:match("([^,]+),([^,]+),([^,]*)")
+      data[user] = { hours = tonumber(hours), kills = tonumber(kills) or 0 }
       line = file:readLine()
   end
   file:close()
 
-  local hoursSurvived = data[username] or 0
-  print("[ServerPlayerTierHandler] Loaded survived hours for user: " .. username .. " - " .. hoursSurvived)
-  return hoursSurvived
+  local userData = data[username] or { hours = 0, kills = 0 }
+  print("[ServerPlayerTierHandler] Loaded tier data for user: " .. username ..
+      " - Hours: " .. userData.hours .. ", Kills: " .. userData.kills)
+
+  -- Send response back to client
+  sendServerCommand(player, "PlayerTierHandler", "loadSurvivedHoursResponse",
+      { username = username, hours = userData.hours, zombieKills = userData.kills })
+
+  return userData.hours, userData.kills
 end
 
 function getPlayerFromUsername(username)
@@ -130,20 +139,90 @@ function getPlayerFromUsername(username)
   return nil
 end
 
+-- Function to save the player's Exo Operator Level to a file
+function ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
+  if not player then return end
+  local username = player:getUsername()
+  -- Use the level passed from client instead of reading from modData
+  local level = args.exoLevel
+
+  local filePath = "server-player-exo-level.ini"
+  local data = {}
+
+  -- Read existing data from the file
+  local file = getFileReader(filePath, true)
+  if file then
+      local line = file:readLine()
+      while line do
+          local user, exoLevel = line:match("([^,]+),([^,]+)")
+          data[user] = tonumber(exoLevel) or 1
+          line = file:readLine()
+      end
+      file:close()
+  end
+
+  -- Update the data with the current player's information
+  data[username] = level
+
+  -- Write the updated data back to the file
+  local fileWriter = getFileWriter(filePath, true, false)
+  if fileWriter then
+      for user, userLevel in pairs(data) do
+          fileWriter:write(string.format("%s,%d\n", user, userLevel))
+      end
+      fileWriter:close()
+      print("[ServerPlayerTierHandler] Saved exo operator level for user: " .. username .. " - Level: " .. level)
+      sendServerCommand(player, "PlayerTierHandler", "saveExoOperatorLevelResponse",
+        { username = username, exoLevel = level })
+  else
+      error("Failed to open file for writing: " .. filePath)
+  end
+end
+
+-- Function to load the player's Exo Operator Level from a file
+function ServerPlayerTierHandler.loadPlayerExoOperatorLevel(player)
+  if not player then return end
+  local username = player:getUsername()
+
+  local filePath = "server-player-exo-level.ini"
+  local file = getFileReader(filePath, true)
+  if not file then
+      print("[ServerPlayerTierHandler] No saved exo operator level data found for user: " .. username)
+      sendServerCommand(player, "PlayerTierHandler", "loadExoOperatorLevelResponse",
+        { username = username, exoLevel = 1 })
+      return 1
+  end
+
+  local data = {}
+  local line = file:readLine()
+  while line do
+      local user, exoLevel = line:match("([^,]+),([^,]+)")
+      data[user] = tonumber(exoLevel) or 1
+      line = file:readLine()
+  end
+  file:close()
+
+  local level = data[username] or 1
+  print("[ServerPlayerTierHandler] Loaded exo operator level for user: " .. username .. " - Level: " .. level)
+
+  -- Send response back to client
+  sendServerCommand(player, "PlayerTierHandler", "loadExoOperatorLevelResponse",
+      { username = username, exoLevel = level })
+
+  return level
+end
+
+-- Update the OnClientCommand handler to process exo operator level commands
 Events.OnClientCommand.Add(function(module, command, player, args)
   if module == "PlayerTierHandler" then
       if command == "saveSurvivedHours" then
           ServerPlayerTierHandler.savePlayerSurvivedHours(player)
       elseif command == "loadSurvivedHours" then
-          local hoursSurvived = ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
-          player:setHoursSurvived(hoursSurvived)
-      elseif command == "applyUnlimitedEnduranceAndTrait" then
-          local targetPlayer = getPlayerFromUsername(args.username)
-          if targetPlayer then
-              ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(targetPlayer)
-          else
-              print("[ServerPlayerTierHandler] Player not found: " .. args.username)
-          end
+          ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
+      elseif command == "saveExoOperatorLevel" then
+          ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
+      elseif command == "loadExoOperatorLevel" then
+          ServerPlayerTierHandler.loadPlayerExoOperatorLevel(player)
       end
   end
 end)
