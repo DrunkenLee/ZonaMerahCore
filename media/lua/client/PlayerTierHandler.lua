@@ -259,37 +259,32 @@ function PlayerTierHandler.giveXPBoost(player)
   local message = ""
 
   if tier == "Newbies" then
-      bonusMultiplier = 1.0 -- No boost
+      bonusMultiplier = 1.0 -- No boost (0%)
       message = "No Bonus Applied"
   elseif tier == "Adventurer" then
-      bonusMultiplier = 1.1 -- 10% boost
-      SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
-      message = "Adventurer Bonus Applied"
+      bonusMultiplier = 1.04 -- 4% boost
+      message = "Adventurer Bonus Applied (+4%)"
   elseif tier == "Veteran" then
-      bonusMultiplier = 1.2 -- 20% boost
-      SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
-      message = "Veteran Bonus Applied"
+      bonusMultiplier = 1.09 -- 9% boost
+      message = "Veteran Bonus Applied (+9%)"
   elseif tier == "Champion" then
+      bonusMultiplier = 1.13 -- 13% boost
+      message = "Champion Bonus Applied (+13%)"
+  elseif tier == "Legend" then
+      bonusMultiplier = 1.17 -- 17% boost
+      message = "Legend Bonus Applied (+17%)"
+  elseif tier == "Immortal" then
+      bonusMultiplier = 1.21 -- 21% boost
+      message = "Immortal Bonus Applied (+21%)"
+  elseif tier == "Mythic" then
+      bonusMultiplier = 1.26 -- 26% boost
+      message = "Mythic Bonus Applied (+26%)"
+  elseif tier == "Godlike" then
       bonusMultiplier = 1.3 -- 30% boost
-      SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
-      message = "Champion Bonus Applied"
-  elseif tier == "Legend" or tierValue >= 5 and tierValue < 6 then
-      bonusMultiplier = 1.5 -- 50% boost
-      SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
-      message = "Legend Bonus Applied"
-  elseif tier == "Immortal" or tierValue >= 6 and tierValue < 7 then
-      bonusMultiplier = 1.5 -- 50% boost
-      SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
-      message = "Immortal Bonus Applied"
-  elseif tier == "Mythic" or tierValue >= 7 and tierValue < 8 then
-      bonusMultiplier = 1.5 -- 50% boost
-      SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
-      message = "Mythic Bonus Applied"
-  elseif tier == "Godlike" or tierValue >= 8 then
-      bonusMultiplier = 1.5 -- 50% boost
-      SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
-      message = "Godlike Bonus Applied"
+      message = "Godlike Bonus Applied (+30%)"
   end
+
+  SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
   player:Say(message)
 end
 
