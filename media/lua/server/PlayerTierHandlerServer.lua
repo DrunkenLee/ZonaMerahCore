@@ -13,36 +13,36 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
         if not player:HasTrait("Desensitized") then
             player:getTraits():add("Desensitized")
         end
-        if player:HasTrait("FearOfBlood") then
-            player:getTraits():remove("FearOfBlood")
-        end
-        if player:HasTrait("Cowardly") then
-            player:getTraits():remove("Cowardly")
-        end
-        if not player:HasTrait("ThickSkinned") then
-            player:getTraits():add("ThickSkinned")
-        end
-        if not player:HasTrait("LowThirst") then
-            player:getTraits():add("LowThirst")
-        end
-        if not player:HasTrait("LightEater") then
-            player:getTraits():add("LightEater")
-        end
-        if player:HasTrait("ThinSkinned") then
-            player:getTraits():remove("ThinSkinned")
-        end
-        if player:HasTrait("HeartyAppetite") then
-            player:getTraits():remove("HeartyAppetite")
-        end
-        if player:HasTrait("HighThirst") then
-            player:getTraits():remove("HighThirst")
-        end
-        if not player:HasTrait("Resilient") then
-          player:getTraits():add("Resilient")
-        end
-        if not player:HasTrait("Brave") then
-          player:getTraits():add("Brave")
-        end
+        -- if player:HasTrait("FearOfBlood") then
+        --     player:getTraits():remove("FearOfBlood")
+        -- end
+        -- if player:HasTrait("Cowardly") then
+        --     player:getTraits():remove("Cowardly")
+        -- end
+        -- if not player:HasTrait("ThickSkinned") then
+        --     player:getTraits():add("ThickSkinned")
+        -- end
+        -- if not player:HasTrait("LowThirst") then
+        --     player:getTraits():add("LowThirst")
+        -- end
+        -- if not player:HasTrait("LightEater") then
+        --     player:getTraits():add("LightEater")
+        -- end
+        -- if player:HasTrait("ThinSkinned") then
+        --     player:getTraits():remove("ThinSkinned")
+        -- end
+        -- if player:HasTrait("HeartyAppetite") then
+        --     player:getTraits():remove("HeartyAppetite")
+        -- end
+        -- if player:HasTrait("HighThirst") then
+        --     player:getTraits():remove("HighThirst")
+        -- end
+        -- if not player:HasTrait("Resilient") then
+        --   player:getTraits():add("Resilient")
+        -- end
+        -- if not player:HasTrait("Brave") then
+        --   player:getTraits():add("Brave")
+        -- end
     elseif tier == "Mythic" then
         player:setUnlimitedEndurance(false)
     elseif tier == "Immortal" then
