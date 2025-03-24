@@ -259,7 +259,7 @@ function PlayerTierHandler.giveXPBoost(player)
   local message = ""
 
   if tier == "Newbies" then
-      bonusMultiplier = 1.0 -- No boost (0%)
+      bonusMultiplier = 1.01 -- No boost (0%)
       message = "No Bonus Applied"
   elseif tier == "Adventurer" then
       bonusMultiplier = 1.04 -- 4% boost
