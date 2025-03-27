@@ -2,6 +2,7 @@ require "PlayerConfig"
 require "ISContextMenu"
 require "Translate/EN/Sandbox_EN"
 require "SpeedFramework"
+require "PlayerTitleHandler"
 
 PlayerTierHandler = {
   historyData = {}
@@ -25,25 +26,32 @@ end
 
 function PlayerTierHandler.recordPlayerTier(player)
   if not player then return nil end
-  -- Trigger server-side save with both hours and zombie kills
+
+  -- Trigger server-side save
+  sendClientCommand("PlayerTierHandler", "saveSurvivedHours", {})
+
+  player:Say("Your tier data has been recorded on the server.")
+end
+
+function PlayerTierHandler.loadPlayerTierFromFile(player)
+  if not player then return nil end
+
+  -- Trigger server-side load
+  sendClientCommand("PlayerTierHandler", "loadSurvivedHours", {})
+
+  player:Say("Requesting your tier data from the server...")
+end
+
+-- New function to explicitly request tier data from server
+function PlayerTierHandler.loadTierFromServer(player)
+  if not player then return end
   local username = player:getUsername()
-  local hours = player:getHoursSurvived()
-  local zombieKills = player:getZombieKills()
-  sendClientCommand("PlayerTierHandler", "saveSurvivedHours", {
-    username = username,
-    hours = hours,
-    zombieKills = zombieKills
+
+  sendClientCommand("PlayerTierHandler", "loadPlayerTier", {
+      username = username
   })
 
-  Events.OnServerCommand.Add(function(module, command, args)
-    if module == "PlayerTierHandler" and command == "saveSurvivedHoursResponse" then
-        username = args.username
-        hours = args.hours
-        zombieKills = args.zombieKills
-        print("[ServerResponse] Player: " .. username .. " has survived for " .. hours .. " hours with " .. zombieKills .. " zombie kills.")
-    end
-  end)
-  player:Say("Your tier data has been recorded on the server.")
+  player:Say("Requesting your tier data from the server...")
 end
 
 function PlayerTierHandler.reassignRecordedTier(player)
@@ -102,41 +110,14 @@ end
 
 -- Function to assign a tier to a player dynamically
 function PlayerTierHandler.setPlayerTier(admin, targetPlayer, tier)
-  local modData = targetPlayer:getModData()
-  modData.PlayerTier = tier
-  modData.TierSetManually = true
+  -- Send command to server instead of modifying directly
+  sendClientCommand("PlayerTierHandler", "setPlayerTier", {
+    adminUsername = admin:getUsername(),
+    targetUsername = targetPlayer:getUsername(),
+    tier = tier
+  })
 
-  -- Update survival time and zombie kills based on the tier
-  if tier == "Newbies" then
-      PlayerTierHandler.updatePlayerStats(targetPlayer, 5 * 24, 0) -- 5 days
-      modData.PlayerTierValue = 1
-  elseif tier == "Adventurer" then
-      PlayerTierHandler.updatePlayerStats(targetPlayer, 10 * 24, 150) -- 10 days
-      modData.PlayerTierValue = 2
-  elseif tier == "Veteran" then
-      PlayerTierHandler.updatePlayerStats(targetPlayer, 17.5 * 24, 500) -- 17.5 days
-      modData.PlayerTierValue = 3
-  elseif tier == "Champion" then
-      PlayerTierHandler.updatePlayerStats(targetPlayer, 25 * 24, 2000) -- 25 days
-      modData.PlayerTierValue = 4
-  elseif tier == "Legend" then
-      PlayerTierHandler.updatePlayerStats(targetPlayer, 36 * 24, 4000) -- 36 days
-      modData.PlayerTierValue = 5
-  elseif tier == "Immortal" then
-      PlayerTierHandler.updatePlayerStats(targetPlayer, 61 * 24, 8000) -- 61 days
-      modData.PlayerTierValue = 6
-  elseif tier == "Mythic" then
-      PlayerTierHandler.updatePlayerStats(targetPlayer, 91 * 24, 10000) -- 91 days
-      modData.PlayerTierValue = 7
-  elseif tier == "Godlike" then
-      PlayerTierHandler.updatePlayerStats(targetPlayer, 121 * 24, 12000) -- 121 days
-      modData.PlayerTierValue = 8
-  end
-
-  if admin then
-      admin:Say("Successfully set " .. targetPlayer:getUsername() .. "'s tier to " .. tier)
-  end
-  targetPlayer:Say("Your tier has been updated to: " .. tier .. " with appropriate survival time and zombie kills")
+  admin:Say("Sending request to set " .. targetPlayer:getUsername() .. "'s tier to " .. tier)
 end
 
 -- Function to save a player's progress
@@ -211,27 +192,23 @@ function PlayerTierHandler.addAdminMenu(playerIndex, context)
   local admin = getSpecificPlayer(playerIndex)
   if not admin or not admin:isAccessLevel("admin") then return end
 
-  -- Create the main submenu with a label that indicates both options are available
-  local submenu = context:getNew(context)
-  context:addSubMenu(
-      context:addOption("Player Tier Management"),
-      submenu
-  )
-
-  -- Get online players
-  local players = getOnlinePlayers()
-  for i = 0, players:size() - 1 do
-      local player = players:get(i)
-      local username = player:getUsername()
-      -- Create a submenu for this player
-      local playerSubMenu = submenu:getNew(submenu)
-      submenu:addSubMenu(
-          submenu:addOption("Manage " .. username),
-          playerSubMenu
-      )
-      -- Add tier options and exo operator level options to this player's submenu
-      PlayerTierHandler.addTierOptionsToMenu(playerSubMenu, admin, player)
-  end
+    local submenu = context:getNew(context) -- Create a submenu
+    context:addSubMenu(
+        context:addOption("Set Player Tier"),
+        submenu
+    )
+    local players = getOnlinePlayers()
+    -- Add each connected player to the submenu
+    for i = 0, players:size() - 1 do
+        local player = players:get(i)
+        local username = player:getUsername()
+        local subSubMenu = submenu:getNew(submenu)
+        submenu:addSubMenu(
+            submenu:addOption("Set Tier for " .. username),
+            subSubMenu
+        )
+        PlayerTierHandler.addTierOptionsToMenu(subSubMenu, admin, player)
+    end
 end
 
 function PlayerTierHandler.updateTierAndGiveXPBoost(player)
@@ -250,6 +227,9 @@ function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
 
   -- Add "Update My Tier and Get XP Boost" option to the context menu
   context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
+
+  -- Add "Sync Tier from Server" option
+  context:addOption("Sync Tier from Server", player, PlayerTierHandler.loadTierFromServer, player)
 end
 
 function PlayerTierHandler.giveXPBoost(player)
@@ -329,6 +309,21 @@ function PlayerTierHandler.updatePlayerTier(player)
       newTierValue = 8
   end
 
+  -- Check player title and apply minimum tier restrictions
+  local playerTitle = PlayerTitleHandler.getPlayerTitle(player)
+
+  -- Title = 1 (VIP) must be at least Champion
+  if playerTitle == 1 and newTierValue < 4 then
+      newTier = "Champion"
+      newTierValue = 4
+  end
+
+  -- Title >= 2 (VVIP or MVP) must be at least Legend
+  if playerTitle >= 2 and newTierValue < 5 then
+      newTier = "Legend"
+      newTierValue = 5
+  end
+
   local currentTier = modData.PlayerTier
   local currentTierValue = modData.PlayerTierValue
   if currentTier ~= newTier then
@@ -336,6 +331,12 @@ function PlayerTierHandler.updatePlayerTier(player)
       modData.PlayerTierValue = newTierValue
       local intSurvivalDays = math.floor(survivalDays)
       player:Say("You have survived for " .. intSurvivalDays .. " days with " .. zombieKills .. " zombie kills and have been promoted to " .. newTier)
+
+      -- Add message if tier was upgraded due to title status
+      if (playerTitle == 1 and newTierValue == 4 and survivalDays <= 20) or
+         (playerTitle >= 2 and newTierValue == 5 and survivalDays <= 30) then
+          player:Say("Your tier was boosted due to your Supporter status!")
+      end
   end
 end
 
@@ -416,11 +417,8 @@ function PlayerTierHandler.getExoOperatorLevel(player)
         Events.OnServerCommand.Remove(eventListener)
 
         if args.exoLevel and args.exoLevel > 0 then
-          -- Store the level in modData for future reference
+          -- Update local modData with server value
           modData.ExoOperatorLevel = args.exoLevel
-          print("[PlayerTierHandler] Loaded Exo Operator Level for " .. username .. ": " .. args.exoLevel)
-
-          -- Optional notification - remove if not desired
           player:Say("Exo Operator Level synced from server: Level " .. args.exoLevel)
         end
       end
@@ -462,6 +460,41 @@ function PlayerTierHandler.addExoOperatorLevelMenu(context, admin, targetPlayer)
   end
 end
 
+-- Enhanced server command handler to properly process all responses
+Events.OnServerCommand.Add(function(module, command, args)
+    if module == "PlayerTierHandler" then
+        if command == "tierSetResponse" then
+            -- Display response to admin
+            local player = getPlayer()
+            if player then
+                player:Say(args.message)
+            end
+        elseif command == "tierUpdated" then
+            -- Update local player data
+            local player = getPlayer()
+            if player then
+                local modData = player:getModData()
+                modData.PlayerTier = args.tier
+                modData.PlayerTierValue = args.tierValue or 1
+                modData.TierSetManually = true
+                player:Say(args.message)
+            end
+        elseif command == "loadPlayerTierResponse" then
+            -- Handle loaded tier data
+            local player = getPlayer()
+            if player and player:getUsername() == args.username and args.tier then
+                local modData = player:getModData()
+                modData.PlayerTier = args.tier
+                modData.PlayerTierValue = args.tierValue or 1
+                modData.TierSetManually = true
+                player:Say("Your tier has been loaded: " .. args.tier)
+            elseif player and player:getUsername() == args.username then
+                player:Say("No tier data found on server.")
+            end
+        end
+    end
+end)
+
 -- Hook into the EVERY DAY event to give XP boost based on tier and update tier based on survival days
 Events.EveryHours.Add(function()
   local players = getOnlinePlayers()
@@ -469,14 +502,12 @@ Events.EveryHours.Add(function()
       local player = players:get(i)
       PlayerTierHandler.updatePlayerTier(player)
       PlayerTierHandler.giveXPBoost(player)
-      ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
   end
 end)
 
 -- Hook into the context menu event for admins and players
 Events.OnFillWorldObjectContextMenu.Add(PlayerTierHandler.addAdminMenu)
 Events.OnFillWorldObjectContextMenu.Add(PlayerTierHandler.addPlayerTierMenu)
-
 
 Events.OnCreatePlayer.Add(function(playerIndex, player)
     PlayerTierHandler.assignPlayerTier(player)
