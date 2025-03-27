@@ -63,36 +63,6 @@ function PlayerTierHandler.reassignRecordedTier(player)
     username = username
   })
 
-  -- Setup a one-time event listener for the server response
-  local eventListener = function(module, command, args)
-    if module == "PlayerTierHandler" and command == "loadSurvivedHoursResponse" then
-      if args.username == username then
-        -- Remove this listener after we've handled our response
-        Events.OnServerCommand.Remove(eventListener)
-
-        if args.hours > 0 or args.zombieKills > 0 then
-          -- Update player stats with the loaded data
-          player:setHoursSurvived(args.hours)
-          player:setZombieKills(args.zombieKills)
-
-          -- Also store in modData for reference
-          local modData = player:getModData()
-          modData.HoursSurvived = args.hours
-          modData.ZombieKills = args.zombieKills
-
-          -- Run tier update to make sure tier matches the loaded stats
-          PlayerTierHandler.updatePlayerTier(player)
-
-          local survivalDays = math.floor(args.hours / 24)
-          player:Say("Loaded tier data: " .. survivalDays .. " days survived with " .. args.zombieKills .. " zombie kills")
-        else
-          player:Say("No previous tier data found on server.")
-        end
-      end
-    end
-  end
-
-  Events.OnServerCommand.Add(eventListener)
   player:Say("Requesting your tier data from the server...")
 end
 
@@ -111,6 +81,7 @@ end
 -- Function to assign a tier to a player dynamically
 function PlayerTierHandler.setPlayerTier(admin, targetPlayer, tier)
   -- Send command to server instead of modifying directly
+  print("Sending request to set " .. targetPlayer:getUsername() .. "'s tier to " .. tier)
   sendClientCommand("PlayerTierHandler", "setPlayerTier", {
     adminUsername = admin:getUsername(),
     targetUsername = targetPlayer:getUsername(),
@@ -268,14 +239,67 @@ function PlayerTierHandler.giveXPBoost(player)
   player:Say(message)
 end
 
-function PlayerTierHandler.updatePlayerTier(player)
+function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
+  if not player then return false end
   local modData = player:getModData()
-  if modData.TierSetManually then
-      return -- Do not update the tier if it was set manually
-  end
 
   local survivalDays = player:getHoursSurvived() / 24
   local zombieKills = player:getZombieKills()
+
+  -- Check player title and apply minimum stats for VIPs
+  local playerTitle = PlayerTitleHandler.getPlayerTitle(player)
+  local statsChanged = false
+
+  -- Title = 1 (VIP) must have at least Champion stats
+  if playerTitle == 1 then
+    local minDays = 21  -- > 20 days needed for Champion
+    local minKills = 2000
+
+    if survivalDays < minDays then
+      local minHours = minDays * 24
+      player:setHoursSurvived(minHours)
+      modData.HoursSurvived = minHours
+      survivalDays = minDays
+      statsChanged = true
+    end
+
+    if zombieKills < minKills then
+      player:setZombieKills(minKills)
+      modData.ZombieKills = minKills
+      zombieKills = minKills
+      statsChanged = true
+    end
+
+    if statsChanged then
+      player:Say("Your stats have been boosted to match your VIP status!")
+    end
+  end
+
+  -- Title >= 2 (VVIP or MVP) must have at least Legend stats
+  if playerTitle >= 2 then
+    local minDays = 31  -- > 30 days needed for Legend
+    local minKills = 4000
+
+    if survivalDays < minDays then
+      local minHours = minDays * 24
+      player:setHoursSurvived(minHours)
+      modData.HoursSurvived = minHours
+      survivalDays = minDays
+      statsChanged = true
+    end
+
+    if zombieKills < minKills then
+      player:setZombieKills(minKills)
+      modData.ZombieKills = minKills
+      zombieKills = minKills
+      statsChanged = true
+    end
+
+    if statsChanged then
+      player:Say("Your stats have been boosted to match your VVIP/MVP status!")
+    end
+  end
+
   local newTier = "Newbies"
   local newTierValue = 1
 
@@ -309,9 +333,7 @@ function PlayerTierHandler.updatePlayerTier(player)
       newTierValue = 8
   end
 
-  -- Check player title and apply minimum tier restrictions
-  local playerTitle = PlayerTitleHandler.getPlayerTitle(player)
-
+  -- We still check minimum tier requirements as a safety measure
   -- Title = 1 (VIP) must be at least Champion
   if playerTitle == 1 and newTierValue < 4 then
       newTier = "Champion"
@@ -326,7 +348,9 @@ function PlayerTierHandler.updatePlayerTier(player)
 
   local currentTier = modData.PlayerTier
   local currentTierValue = modData.PlayerTierValue
-  if currentTier ~= newTier then
+
+  -- Update if tier changed OR stats changed OR forceUpdate is true
+  if currentTier ~= newTier or statsChanged or forceUpdate == true then
       modData.PlayerTier = newTier
       modData.PlayerTierValue = newTierValue
       local intSurvivalDays = math.floor(survivalDays)
@@ -337,7 +361,11 @@ function PlayerTierHandler.updatePlayerTier(player)
          (playerTitle >= 2 and newTierValue == 5 and survivalDays <= 30) then
           player:Say("Your tier was boosted due to your Supporter status!")
       end
+
+      return true -- Return true if tier was updated
   end
+
+  return false -- Return false if no update occurred
 end
 
 function PlayerTierHandler.debugSetSurvivalTime(player, hours)
@@ -462,37 +490,51 @@ end
 
 -- Enhanced server command handler to properly process all responses
 Events.OnServerCommand.Add(function(module, command, args)
-    if module == "PlayerTierHandler" then
-        if command == "tierSetResponse" then
-            -- Display response to admin
-            local player = getPlayer()
-            if player then
-                player:Say(args.message)
-            end
-        elseif command == "tierUpdated" then
-            -- Update local player data
-            local player = getPlayer()
-            if player then
-                local modData = player:getModData()
-                modData.PlayerTier = args.tier
-                modData.PlayerTierValue = args.tierValue or 1
-                modData.TierSetManually = true
-                player:Say(args.message)
-            end
-        elseif command == "loadPlayerTierResponse" then
-            -- Handle loaded tier data
-            local player = getPlayer()
-            if player and player:getUsername() == args.username and args.tier then
-                local modData = player:getModData()
-                modData.PlayerTier = args.tier
-                modData.PlayerTierValue = args.tierValue or 1
-                modData.TierSetManually = true
-                player:Say("Your tier has been loaded: " .. args.tier)
-            elseif player and player:getUsername() == args.username then
-                player:Say("No tier data found on server.")
-            end
-        end
-    end
+  if module == "PlayerTierHandler" then
+      if command == "tierSetResponse" then
+          -- Display response to admin
+          local player = getPlayer()
+          if player then
+              player:Say(args.message)
+          end
+      elseif command == "tierUpdated" then
+          -- Update local player data
+          local player = getPlayer()
+          if player then
+              local modData = player:getModData()
+              modData.PlayerTier = args.tier
+              modData.PlayerTierValue = args.tierValue or 1
+              modData.TierSetManually = true
+              player:Say(args.message)
+          end
+      elseif command == "loadPlayerTierResponse" then
+          -- Handle loaded tier data
+          local player = getPlayer()
+          if player and player:getUsername() == args.username and args.tier then
+              local modData = player:getModData()
+              modData.PlayerTier = args.tier
+              modData.PlayerTierValue = args.tierValue or 1
+              modData.TierSetManually = true
+              player:Say("Your tier has been loaded: " .. args.tier)
+          elseif player and player:getUsername() == args.username then
+              player:Say("No tier data found on server.")
+          end
+      elseif command == "loadSurvivedHoursResponse" then
+          -- Handle loaded survival hours and zombie kills
+          local player = getPlayer()
+          if player and player:getUsername() == args.username then
+              -- Update player stats with data from server
+              PlayerTierHandler.updatePlayerStats(player, args.hours, args.zombieKills)
+
+              -- Force update tier based on new stats
+              PlayerTierHandler.updatePlayerTier(player, true) -- Pass true to force update
+
+              local survivalDays = math.floor(args.hours / 24)
+              player:Say("Data loaded from server: " .. survivalDays .. " days survived and " .. args.zombieKills .. " zombie kills.")
+              player:Say("Your tier is now: " .. PlayerTierHandler.getPlayerTier(player))
+          end
+      end
+  end
 end)
 
 -- Hook into the EVERY DAY event to give XP boost based on tier and update tier based on survival days

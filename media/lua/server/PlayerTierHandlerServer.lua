@@ -94,9 +94,11 @@ function ServerPlayerTierHandler.savePlayerSurvivedHours(player)
 end
 
 -- Function to load the player's tier data from a file
-function ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
+function ServerPlayerTierHandler.loadPlayerSurvivedHours(player, args)
   if not player then return end
-  local username = player:getUsername()
+
+  -- Use the username from args if provided, otherwise use the player's username
+  local username = args and args.username or player:getUsername()
 
   local filePath = "server-player-tier.ini"
   local file = getFileReader(filePath, true)
@@ -125,18 +127,6 @@ function ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
       { username = username, hours = userData.hours, zombieKills = userData.kills })
 
   return userData.hours, userData.kills
-end
-
-function getPlayerFromUsername(username)
-  for i = 0, getNumActivePlayers() - 1 do
-      local player = getSpecificPlayer(i)
-      if player and player:getUsername() == username then
-          print("[ServerPlayerTierHandler] Player found: " .. username)
-          return player
-      end
-  end
-  print("[ServerPlayerTierHandler] Player not found: " .. username)
-  return nil
 end
 
 -- Function to save the player's Exo Operator Level to a file
@@ -212,31 +202,109 @@ function ServerPlayerTierHandler.loadPlayerExoOperatorLevel(player)
   return level
 end
 
+function ServerPlayerTierHandler.setPlayerTier(admin, args)
+  if not admin:isAccessLevel("admin") then
+      sendServerCommand(admin, "PlayerTierHandler", "tierSetResponse",
+          { message = "Error: Only admins can set player tiers." })
+      return
+  end
+
+  -- Get the target player by username
+  local targetUsername = args.targetUsername
+  local targetPlayer = nil
+
+  -- Find the target player in the online players
+  local players = getOnlinePlayers()
+  for i = 0, players:size() - 1 do
+      local player = players:get(i)
+      if player:getUsername() == targetUsername then
+          targetPlayer = player
+          break
+      end
+  end
+
+  if not targetPlayer then
+      sendServerCommand(admin, "PlayerTierHandler", "tierSetResponse",
+          { message = "Error: Player " .. targetUsername .. " not found." })
+      return
+  end
+
+  local tier = args.tier
+  print("[ServerPlayerTierHandler] Attempting to set " .. targetUsername .. "'s tier to: " .. tostring(tier))
+
+  -- Validate tier is in the available tiers
+  local validTier = false
+  local tierValue = 1
+  local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend", "Immortal", "Mythic", "Godlike" }
+
+  -- FIX: Don't use the same variable name for the loop counter and flag
+  for i, tierName in ipairs(availableTiers) do
+      if tier == tierName then
+          validTier = true
+          tierValue = i
+          break
+      end
+  end
+
+  if not validTier then
+      sendServerCommand(admin, "PlayerTierHandler", "tierSetResponse",
+          { message = "Error: Invalid tier '" .. tostring(tier) .. "'" })
+      return
+  end
+
+  -- Update target player's tier
+  local modData = targetPlayer:getModData()
+  modData.PlayerTier = tier
+  modData.PlayerTierValue = tierValue
+  modData.TierSetManually = true
+
+  -- Save the tier to the server tier file
+  local filePath = "server-player-tier-manual.ini"
+  local fileWriter = getFileWriter(filePath, true, false)
+  if fileWriter then
+      fileWriter:write(targetUsername .. "," .. tier .. "," .. tierValue .. "\n")
+      fileWriter:close()
+  end
+
+  -- Notify admin of success
+  sendServerCommand(admin, "PlayerTierHandler", "tierSetResponse",
+      { message = "Successfully set " .. targetUsername .. "'s tier to " .. tier })
+
+  -- Notify target player of tier change
+  sendServerCommand(targetPlayer, "PlayerTierHandler", "tierUpdated",
+      { tier = tier, tierValue = tierValue,
+        message = "An admin has set your tier to " .. tier })
+
+  print("[ServerPlayerTierHandler] Admin " .. admin:getUsername() ..
+        " set " .. targetUsername .. "'s tier to " .. tier)
+end
+
 -- Update the OnClientCommand handler to process exo operator level commands
 Events.OnClientCommand.Add(function(module, command, player, args)
   if module == "PlayerTierHandler" then
       if command == "saveSurvivedHours" then
           ServerPlayerTierHandler.savePlayerSurvivedHours(player)
       elseif command == "loadSurvivedHours" then
-          ServerPlayerTierHandler.loadPlayerSurvivedHours(player)
+          ServerPlayerTierHandler.loadPlayerSurvivedHours(player, args)
       elseif command == "saveExoOperatorLevel" then
           ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
       elseif command == "loadExoOperatorLevel" then
           ServerPlayerTierHandler.loadPlayerExoOperatorLevel(player)
+      elseif command == "loadPlayerTier" then
+          ServerPlayerTierHandler.loadPlayerSurvivedHours(player, args)
+      elseif command == "setPlayerTier" then
+          -- Debugging info
+          print("[ServerPlayerTierHandler] Received setPlayerTier command from " .. player:getUsername())
+          for k, v in pairs(args) do
+              print("  " .. k .. " = " .. tostring(v))
+          end
+
+          ServerPlayerTierHandler.setPlayerTier(player, args)
       end
   end
 end)
 
--- Helper function to get a player object by username
-function getPlayerFromUsername(username)
-  for i = 0, getNumActivePlayers() - 1 do
-      local player = getSpecificPlayer(i)
-      if player and player:getUsername() == username then
-          return player
-      end
-  end
-  return nil
-end
+
 
 Events.EveryDays.Add(function()
     for i = 0, getNumActivePlayers() - 1 do
