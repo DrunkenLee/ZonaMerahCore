@@ -13,36 +13,6 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
         if not player:HasTrait("Desensitized") then
             player:getTraits():add("Desensitized")
         end
-        -- if player:HasTrait("FearOfBlood") then
-        --     player:getTraits():remove("FearOfBlood")
-        -- end
-        -- if player:HasTrait("Cowardly") then
-        --     player:getTraits():remove("Cowardly")
-        -- end
-        -- if not player:HasTrait("ThickSkinned") then
-        --     player:getTraits():add("ThickSkinned")
-        -- end
-        -- if not player:HasTrait("LowThirst") then
-        --     player:getTraits():add("LowThirst")
-        -- end
-        -- if not player:HasTrait("LightEater") then
-        --     player:getTraits():add("LightEater")
-        -- end
-        -- if player:HasTrait("ThinSkinned") then
-        --     player:getTraits():remove("ThinSkinned")
-        -- end
-        -- if player:HasTrait("HeartyAppetite") then
-        --     player:getTraits():remove("HeartyAppetite")
-        -- end
-        -- if player:HasTrait("HighThirst") then
-        --     player:getTraits():remove("HighThirst")
-        -- end
-        -- if not player:HasTrait("Resilient") then
-        --   player:getTraits():add("Resilient")
-        -- end
-        -- if not player:HasTrait("Brave") then
-        --   player:getTraits():add("Brave")
-        -- end
     elseif tier == "Mythic" then
         player:setUnlimitedEndurance(false)
     elseif tier == "Immortal" then
@@ -247,5 +217,72 @@ Events.EveryDays.Add(function()
         end
     end
 end)
+
+if not PlayerTierHandlerServer then PlayerTierHandlerServer = {} end
+
+local function loadPlayerTierDataFromINI(username)
+    -- Path to player data INI files
+    local path = "ZonaMerahCore/PlayerData/"
+    local fileName = username .. "_TierData.ini"
+
+    -- Create directories if they don't exist
+    if not DirectoryExists(path) then
+        createDirectory(path)
+    end
+
+    -- Check if file exists
+    if not fileExists(path .. fileName) then
+        return nil
+    end
+
+    -- Load data from INI file
+    local data = {}
+    local file = getFileReader(path .. fileName, false)
+    local line = file:readLine()
+
+    while line do
+        local key, value = line:match("^(.-)=(.-)$")
+        if key and value then
+            -- Convert numeric values
+            if key == "hours" or key == "zombieKills" or key == "playerTierValue" or key == "exoOperatorLevel" then
+                data[key] = tonumber(value) or 0
+            -- Convert boolean values
+            elseif key == "tierSetManually" then
+                data[key] = value == "true"
+            else
+                data[key] = value
+            end
+        end
+        line = file:readLine()
+    end
+
+    file:close()
+    return data
+end
+
+-- Command handler for loading player tier data
+function PlayerTierHandlerServer.onLoadPlayerTierData(module, command, player, args)
+    if module ~= "PlayerTierHandler" or command ~= "loadPlayerTierData" then return end
+
+    local username = args.username
+    if not username then return end
+
+    -- Load player data from INI file
+    local data = loadPlayerTierDataFromINI(username) or {}
+
+    -- Send response back to client
+    sendServerCommand(player, "PlayerTierHandler", "loadPlayerTierDataResponse", {
+        username = username,
+        hours = data.hours or 0,
+        zombieKills = data.zombieKills or 0,
+        playerTier = data.playerTier,
+        playerTierValue = data.playerTierValue,
+        tierSetManually = data.tierSetManually,
+        exoOperatorLevel = data.exoOperatorLevel
+    })
+end
+
+-- Register the server-side command handler
+Events.OnClientCommand.Add(PlayerTierHandlerServer.onLoadPlayerTierData)
 
 return ServerPlayerTierHandler

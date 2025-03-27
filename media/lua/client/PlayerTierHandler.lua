@@ -47,45 +47,6 @@ function PlayerTierHandler.recordPlayerTier(player)
 end
 
 function PlayerTierHandler.reassignRecordedTier(player)
-  if not player then return nil end
-  local username = player:getUsername()
-
-  -- Trigger server-side load (includes zombie kills now)
-  sendClientCommand("PlayerTierHandler", "loadSurvivedHours", {
-    username = username
-  })
-
-  -- Setup a one-time event listener for the server response
-  local eventListener = function(module, command, args)
-    if module == "PlayerTierHandler" and command == "loadSurvivedHoursResponse" then
-      if args.username == username then
-        -- Remove this listener after we've handled our response
-        Events.OnServerCommand.Remove(eventListener)
-
-        if args.hours > 0 or args.zombieKills > 0 then
-          -- Update player stats with the loaded data
-          player:setHoursSurvived(args.hours)
-          player:setZombieKills(args.zombieKills)
-
-          -- Also store in modData for reference
-          local modData = player:getModData()
-          modData.HoursSurvived = args.hours
-          modData.ZombieKills = args.zombieKills
-
-          -- Run tier update to make sure tier matches the loaded stats
-          PlayerTierHandler.updatePlayerTier(player)
-
-          local survivalDays = math.floor(args.hours / 24)
-          player:Say("Loaded tier data: " .. survivalDays .. " days survived with " .. args.zombieKills .. " zombie kills")
-        else
-          player:Say("No previous tier data found on server.")
-        end
-      end
-    end
-  end
-
-  Events.OnServerCommand.Add(eventListener)
-  player:Say("Requesting your tier data from the server...")
 end
 
 -- Function to assign tier based on the PlayerConfig file
@@ -329,13 +290,38 @@ function PlayerTierHandler.updatePlayerTier(player)
       newTierValue = 8
   end
 
+  -- Check player title and enforce minimum tier restrictions
+  local playerTitle = PlayerTitleHandler.getPlayerTitle(player)
+
+  -- Apply title-based restrictions
+  if playerTitle == 1 then -- VIP title
+      -- VIP must be at least Champion (tier 4)
+      if newTierValue < 4 then
+          newTier = "Champion"
+          newTierValue = 4
+      end
+  elseif playerTitle >= 2 then -- VVIP or MVP title
+      -- VVIP/MVP must be at least Legend (tier 5)
+      if newTierValue < 5 then
+          newTier = "Legend"
+          newTierValue = 5
+      end
+  end
+
   local currentTier = modData.PlayerTier
   local currentTierValue = modData.PlayerTierValue
   if currentTier ~= newTier then
       modData.PlayerTier = newTier
       modData.PlayerTierValue = newTierValue
       local intSurvivalDays = math.floor(survivalDays)
-      player:Say("You have survived for " .. intSurvivalDays .. " days with " .. zombieKills .. " zombie kills and have been promoted to " .. newTier)
+
+      -- For title-enforced tiers, show a special message
+      if (playerTitle == 1 and newTierValue == 4 and newTier == "Champion") or
+         (playerTitle >= 2 and newTierValue == 5 and newTier == "Legend") then
+          player:Say("Your VIP status ensures your tier is at least " .. newTier)
+      else
+          player:Say("You have survived for " .. intSurvivalDays .. " days with " .. zombieKills .. " zombie kills and have been promoted to " .. newTier)
+      end
   end
 end
 
