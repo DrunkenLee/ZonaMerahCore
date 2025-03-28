@@ -193,14 +193,17 @@ function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
   local player = getSpecificPlayer(playerIndex)
   if not player then return end
 
-  -- Add "Check My Tier" option to the context menu
-  context:addOption("Check My Tier", player, PlayerTierHandler.checkPlayerTier, player)
 
-  -- Add "Update My Tier and Get XP Boost" option to the context menu
-  context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
-
-  -- Add "Sync Tier from Server" option
-  context:addOption("Sync Tier from Server", player, PlayerTierHandler.loadTierFromServer, player)
+    -- Check if player has title level >= 1
+  local playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
+  if not playerTitle or playerTitle < 1 then
+    context:addOption("Check My Tier", player, PlayerTierHandler.checkPlayerTier, player)
+    context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
+  else
+    context:addOption("Check My Tier", player, PlayerTierHandler.checkPlayerTier, player)
+    context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
+    context:addOption("VIP: (DANGER!) Update My Tier To Minimum VIP Min Tier", player, PlayerTierHandler.loadTierFromServer, player)
+  end
 end
 
 function PlayerTierHandler.giveXPBoost(player)
