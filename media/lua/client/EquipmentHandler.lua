@@ -69,28 +69,28 @@ local exoRequirements = {
   -- Faction exoskeletons (all require general level 1)
   ["ExoskeletonCS"] = 1,
   ["ExoskeletonBandits"] = 1,
-  ["ExoskeletonBanditsMk1"] = 1,
-  ["ExoskeletonBanditsMk2"] = 1,
-  ["ExoskeletonBanditsMk21"] = 1,
-  ["ExoskeletonCSMk1"] = 1,
-  ["ExoskeletonCSMk2"] = 1,
-  ["ExoskeletonCSMk21"] = 1,
+  ["ExoskeletonBanditsMk1"] = 2,
+  ["ExoskeletonBanditsMk2"] = 3,
+  ["ExoskeletonBanditsMk21"] = 4,
+  ["ExoskeletonCSMk1"] = 2,
+  ["ExoskeletonCSMk2"] = 3,
+  ["ExoskeletonCSMk21"] = 4,
   ["ExoskeletonDuty"] = 1,
-  ["ExoskeletonDutyMk1"] = 1,
-  ["ExoskeletonDutyMk2"] = 1,
-  ["ExoskeletonDutyMk21"] = 1,
+  ["ExoskeletonDutyMk1"] = 2,
+  ["ExoskeletonDutyMk2"] = 3,
+  ["ExoskeletonDutyMk21"] = 4,
   ["ExoskeletonEcologists"] = 1,
-  ["ExoskeletonEcologistsMk1"] = 1,
-  ["ExoskeletonEcologistsMk2"] = 1,
-  ["ExoskeletonEcologistsMk21"] = 1,
+  ["ExoskeletonEcologistsMk1"] = 2,
+  ["ExoskeletonEcologistsMk2"] = 3,
+  ["ExoskeletonEcologistsMk21"] = 4,
   ["ExoskeletonFreedom"] = 1,
   ["ExoskeletonFreedomMk1"] = 1,
-  ["ExoskeletonFreedomMk2"] = 1,
-  ["ExoskeletonFreedomMk21"] = 1,
+  ["ExoskeletonFreedomMk2"] = 2,
+  ["ExoskeletonFreedomMk21"] = 3,
   ["ExoskeletonMercs"] = 1,
-  ["ExoskeletonMercsMk1"] = 1,
-  ["ExoskeletonMercsMk2"] = 1,
-  ["ExoskeletonMercsMk21"] = 1,
+  ["ExoskeletonMercsMk1"] = 2,
+  ["ExoskeletonMercsMk2"] = 3,
+  ["ExoskeletonMercsMk21"] = 4,
   ["ExoskeletonMilitary"] = 1,
   ["ExoskeletonMilitaryMk1"] = 1,
   ["ExoskeletonMilitaryMk2"] = 1,
@@ -100,9 +100,9 @@ local exoRequirements = {
   ["ExoskeletonMonolithMk2"] = 1,
   ["ExoskeletonMonolithMk21"] = 1,
   ["ExoskeletonLoner"] = 1,
-  ["ExoskeletonLonerMk1"] = 1,
-  ["ExoskeletonLonerMk2"] = 1,
-  ["ExoskeletonLonerMk21"] = 1,
+  ["ExoskeletonLonerMk1"] = 2,
+  ["ExoskeletonLonerMk2"] = 3,
+  ["ExoskeletonLonerMk21"] = 4,
 
   -- Location-specific exoskeletons with their tiers
   ["ExoskeletonMDT1"] = 2, -- Novice Muldraugh Exo-Operator (T2MD)
@@ -121,14 +121,15 @@ local locationExoTypes = {
 
 -- Function to check if player has the location-specific unlock
 function hasLocationUnlock(player, locationType)
+  -- Use PlayerTierHandler's hasLocationPermission function instead of local variables
   if locationType == "MD" then
-    return MDExoUnlocked == 1
+    return PlayerTierHandler.hasLocationPermission(player, "MD")
   elseif locationType == "RS" then
-    return RSExoUnlocked == 1
+    return PlayerTierHandler.hasLocationPermission(player, "RS")
   elseif locationType == "LV" then
-    return LVExoUnlocked == 1
+    return PlayerTierHandler.hasLocationPermission(player, "LV")
   elseif locationType == "Admin" then
-    return PlayerTierHandler.isAdmin(player) -- Assuming there's an admin check function
+    return player:isAccessLevel("admin")
   end
   return false
 end
@@ -138,19 +139,28 @@ function canUseExo(player, exoName)
   local playerLevel = PlayerTierHandler.getExoOperatorLevel(player)
   local requiredLevel = exoRequirements[exoName] or minExoOperatorLevel
 
+  print("Checking exo: " .. exoName .. ", Player level: " .. playerLevel .. ", Required level: " .. requiredLevel)
+
   -- First check general level requirement
   if playerLevel < requiredLevel then
+    print("DENIED: Insufficient level for " .. exoName)
     return false, "level", requiredLevel
   end
 
   -- Then check location-specific permission if applicable
   local locationType = locationExoTypes[exoName]
   if locationType then
-    if not hasLocationUnlock(player, locationType) then
+    print("Location requirement: " .. locationType)
+    local hasPermission = hasLocationUnlock(player, locationType)
+    print("Has permission: " .. tostring(hasPermission))
+
+    if not hasPermission then
+      print("DENIED: Missing location permission for " .. locationType)
       return false, "location", locationType
     end
   end
 
+  print("ALLOWED: All requirements met for " .. exoName)
   return true
 end
 
@@ -225,15 +235,23 @@ Events.OnFillInventoryObjectContextMenu.Add(function(player, context, items)
         -- Found an exoskeleton, check if player can use it
         local canUse, reason, requirement = canUseExo(player, item:getDisplayName())
         if not canUse then
-          context:removeLastOption() -- Remove the "Wear" option
-          -- Add a grayed-out option explaining why
+          -- Find and remove the last "Wear" option
+          local optionCount = context:getOptionCount()
+          for i = optionCount-1, 0, -1 do
+            local option = context:getOptionFromIndex(i)
+            if option and option.name == getText("ContextMenu_Wear") then
+              context:removeOptionByName(getText("ContextMenu_Wear"))
+              break
+            end
+          end
+
+          -- Add a disabled option without a tooltip
           local option = context:addOption(getText("ContextMenu_Wear"), nil)
           option.notAvailable = true
-          local tooltip = ISInventoryPaneContextMenu.addToolTip()
 
+          -- Show a message to the player about the restriction
           if reason == "level" then
-            tooltip:setName("Requires Exo Operator Level")
-            tooltip.description = "You need to be Exo Operator Level " .. requirement .. " to use this exoskeleton."
+            player:Say("You need to be Exo Operator Level " .. requirement .. " to use this exoskeleton.")
           elseif reason == "location" then
             local locationName = ""
             if requirement == "MD" then locationName = "Muldraugh"
@@ -241,11 +259,9 @@ Events.OnFillInventoryObjectContextMenu.Add(function(player, context, items)
             elseif requirement == "LV" then locationName = "Louisville"
             elseif requirement == "Admin" then locationName = "Admin"
             end
-            tooltip:setName("Location Restricted Exoskeleton")
-            tooltip.description = "You need to unlock " .. locationName .. " exoskeleton privileges."
+            player:Say("You need to unlock " .. locationName .. " exoskeleton privileges.")
           end
 
-          option.toolTip = tooltip
           break
         end
       end

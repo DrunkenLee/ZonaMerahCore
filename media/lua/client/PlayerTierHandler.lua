@@ -435,46 +435,28 @@ function PlayerTierHandler.setExoOperatorLevel(player, level)
 end
 
 function PlayerTierHandler.getExoOperatorLevel(player)
-  if not player then return 1 end -- Default to level 1
-  local modData = player:getModData()
+  -- Extra safety checks for player
+  if not player then return 0 end
 
-  -- First check if we already have the value in modData
-  if modData.ExoOperatorLevel then
-    return modData.ExoOperatorLevel
+  -- Convert player index to player object if needed
+  if type(player) == "number" then
+    player = getSpecificPlayer(player)
+    if not player then return 0 end
   end
 
-  -- If not in modData, try to load from server
-  local username = player:getUsername()
-  sendClientCommand("PlayerTierHandler", "loadExoOperatorLevel", {
-    username = username
-  })
+  -- Double check that we have a valid player
+  if not player.getModData then return 0 end
 
-  -- Set up a one-time event listener for the server response
-  local eventListener = function(module, command, args)
-    if module == "PlayerTierHandler" and command == "loadExoOperatorLevelResponse" then
-      if args.username == username then
-        -- Remove this listener after we've handled our response
-        Events.OnServerCommand.Remove(eventListener)
+  -- Get modData with error handling
+  local status, modData = pcall(function() return player:getModData() end)
+  if not status or not modData then return 0 end
 
-        if args.exoLevel and args.exoLevel > 0 then
-          -- Update local modData with server value
-          modData.ExoOperatorLevel = args.exoLevel
-
-          -- Update location permissions
-          modData.MDExoUnlocked = args.MDUnlocked or 0
-          modData.RSExoUnlocked = args.RSUnlocked or 0
-          modData.LVExoUnlocked = args.LVUnlocked or 0
-
-          player:Say("Exo Operator Level synced from server: Level " .. args.exoLevel)
-        end
-      end
-    end
+  -- Initialize if it doesn't exist
+  if not modData.ExoOperatorLevel then
+    modData.ExoOperatorLevel = 0
   end
 
-  Events.OnServerCommand.Add(eventListener)
-
-  -- Return the local value (either from modData or default) while waiting for server
-  return modData.ExoOperatorLevel or 1
+  return modData.ExoOperatorLevel
 end
 
 -- Function to set location-specific permissions
@@ -487,6 +469,12 @@ function PlayerTierHandler.setLocationPermission(player, location, value)
     modData.ExoOperatorLevel = 1
   end
 
+  -- Initialize all location permissions if they don't exist
+  if not modData.MDExoUnlocked then modData.MDExoUnlocked = 0 end
+  if not modData.RSExoUnlocked then modData.RSExoUnlocked = 0 end
+  if not modData.LVExoUnlocked then modData.LVExoUnlocked = 0 end
+
+  -- Set permission for the specified location
   if location == "MD" then
     modData.MDExoUnlocked = value
   elseif location == "RS" then
@@ -515,6 +503,11 @@ end
 function PlayerTierHandler.hasLocationPermission(player, location)
   if not player then return false end
   local modData = player:getModData()
+
+  -- Initialize all location permissions if they don't exist
+  if not modData.MDExoUnlocked then modData.MDExoUnlocked = 0 end
+  if not modData.RSExoUnlocked then modData.RSExoUnlocked = 0 end
+  if not modData.LVExoUnlocked then modData.LVExoUnlocked = 0 end
 
   if location == "MD" then
     return modData.MDExoUnlocked == 1
@@ -597,6 +590,22 @@ function PlayerTierHandler.addExoOperatorMenu(context, admin, targetPlayer)
       end
     )
   end
+end
+
+function PlayerTierHandler.checkExoPermissions(player)
+  if not player then return end
+  local modData = player:getModData()
+
+  -- Initialize all location permissions if they don't exist
+  if not modData.MDExoUnlocked then modData.MDExoUnlocked = 0 end
+  if not modData.RSExoUnlocked then modData.RSExoUnlocked = 0 end
+  if not modData.LVExoUnlocked then modData.LVExoUnlocked = 0 end
+  if not modData.ExoOperatorLevel then modData.ExoOperatorLevel = 1 end
+
+  player:Say("Exo Operator Level: " .. modData.ExoOperatorLevel)
+  player:Say("Muldraugh (MD) Permission: " .. (modData.MDExoUnlocked == 1 and "Granted" or "Not Granted"))
+  player:Say("Riverside (RS) Permission: " .. (modData.RSExoUnlocked == 1 and "Granted" or "Not Granted"))
+  player:Say("Louisville (LV) Permission: " .. (modData.LVExoUnlocked == 1 and "Granted" or "Not Granted"))
 end
 
 -- Enhanced server command handler to properly process all responses
