@@ -397,13 +397,22 @@ function PlayerTierHandler.setExoOperatorLevel(player, level)
 
   if validLevel then
       modData.ExoOperatorLevel = level
+
+      -- Initialize location permissions if they don't exist
+      if not modData.MDExoUnlocked then modData.MDExoUnlocked = 0 end
+      if not modData.RSExoUnlocked then modData.RSExoUnlocked = 0 end
+      if not modData.LVExoUnlocked then modData.LVExoUnlocked = 0 end
+
       player:Say("Your Exo Operator Level has been set to: " .. level)
 
       -- Save to server-side file
       local username = player:getUsername()
       sendClientCommand("PlayerTierHandler", "saveExoOperatorLevel", {
           username = username,
-          exoLevel = level
+          exoLevel = level,
+          MDUnlocked = modData.MDExoUnlocked,
+          RSUnlocked = modData.RSExoUnlocked,
+          LVUnlocked = modData.LVExoUnlocked
       })
 
       -- Set up a one-time event listener to confirm save
@@ -450,6 +459,12 @@ function PlayerTierHandler.getExoOperatorLevel(player)
         if args.exoLevel and args.exoLevel > 0 then
           -- Update local modData with server value
           modData.ExoOperatorLevel = args.exoLevel
+
+          -- Update location permissions
+          modData.MDExoUnlocked = args.MDUnlocked or 0
+          modData.RSExoUnlocked = args.RSUnlocked or 0
+          modData.LVExoUnlocked = args.LVUnlocked or 0
+
           player:Say("Exo Operator Level synced from server: Level " .. args.exoLevel)
         end
       end
@@ -462,32 +477,125 @@ function PlayerTierHandler.getExoOperatorLevel(player)
   return modData.ExoOperatorLevel or 1
 end
 
--- Function for admins to set Exo Operator Level
-function PlayerTierHandler.adminSetExoOperatorLevel(admin, targetPlayer, level)
+-- Function to set location-specific permissions
+function PlayerTierHandler.setLocationPermission(player, location, value)
+  if not player then return false end
+  local modData = player:getModData()
+
+  -- Initialize general level if it doesn't exist
+  if not modData.ExoOperatorLevel then
+    modData.ExoOperatorLevel = 1
+  end
+
+  if location == "MD" then
+    modData.MDExoUnlocked = value
+  elseif location == "RS" then
+    modData.RSExoUnlocked = value
+  elseif location == "LV" then
+    modData.LVExoUnlocked = value
+  else
+    return false
+  end
+
+  -- Save to server-side file
+  local username = player:getUsername()
+  sendClientCommand("PlayerTierHandler", "saveExoOperatorLevel", {
+      username = username,
+      exoLevel = modData.ExoOperatorLevel,
+      MDUnlocked = modData.MDExoUnlocked,
+      RSUnlocked = modData.RSExoUnlocked,
+      LVUnlocked = modData.LVExoUnlocked
+  })
+
+  player:Say(location .. " exoskeleton permission has been " .. (value == 1 and "granted" or "revoked"))
+  return true
+end
+
+-- Function to check if player has location permission
+function PlayerTierHandler.hasLocationPermission(player, location)
+  if not player then return false end
+  local modData = player:getModData()
+
+  if location == "MD" then
+    return modData.MDExoUnlocked == 1
+  elseif location == "RS" then
+    return modData.RSExoUnlocked == 1
+  elseif location == "LV" then
+    return modData.LVExoUnlocked == 1
+  elseif location == "Admin" then
+    return player:isAccessLevel("admin")
+  end
+
+  return false
+end
+
+-- Function for admins to set location permissions
+function PlayerTierHandler.adminSetLocationPermission(admin, targetPlayer, location, value)
   if not admin or not targetPlayer then return end
 
-  if PlayerTierHandler.setExoOperatorLevel(targetPlayer, level) then
-      admin:Say("Successfully set " .. targetPlayer:getUsername() .. "'s Exo Operator Level to " .. level)
+  if not admin:isAccessLevel("admin") then
+    admin:Say("Only admins can set location permissions.")
+    return false
+  end
+
+  if PlayerTierHandler.setLocationPermission(targetPlayer, location, value) then
+    admin:Say("Successfully " .. (value == 1 and "granted" or "revoked") .. " " .. location .. " exoskeleton permission for " .. targetPlayer:getUsername())
+    return true
   else
-      admin:Say("Failed to set Exo Operator Level for " .. targetPlayer:getUsername())
+    admin:Say("Failed to set " .. location .. " permission for " .. targetPlayer:getUsername())
+    return false
   end
 end
 
--- Add Exo Operator level options to the admin menu
-function PlayerTierHandler.addExoOperatorLevelMenu(context, admin, targetPlayer)
-  -- Create a submenu for exo operator levels
-  local subMenu = context:getNew(context)
-  context:addSubMenu(context:addOption("Set Exo Operator Level"), subMenu)
+-- Enhanced admin menu for exo operator levels and permissions
+function PlayerTierHandler.addExoOperatorMenu(context, admin, targetPlayer)
+  -- Create a submenu for exo operator settings
+  local mainOption = context:addOption("Exo Operator Settings")
+  local mainSubMenu = context:getNew(context)
+  context:addSubMenu(mainOption, mainSubMenu)
 
-  -- Add option for each level
+  -- General level submenu
+  local levelOption = mainSubMenu:addOption("Set General Level")
+  local levelSubMenu = mainSubMenu:getNew(mainSubMenu)
+  mainSubMenu:addSubMenu(levelOption, levelSubMenu)
+
   for _, level in ipairs(availableExoOperatorLevel) do
-      subMenu:addOption(
+      levelSubMenu:addOption(
           "Level " .. level,
           admin,
           function()
               PlayerTierHandler.adminSetExoOperatorLevel(admin, targetPlayer, level)
           end
       )
+  end
+
+  -- Location permissions submenus
+  local locations = {
+    { name = "Muldraugh", code = "MD" },
+    { name = "Riverside", code = "RS" },
+    { name = "Louisville", code = "LV" }
+  }
+
+  for _, loc in ipairs(locations) do
+    local locOption = mainSubMenu:addOption(loc.name .. " Permission")
+    local locSubMenu = mainSubMenu:getNew(mainSubMenu)
+    mainSubMenu:addSubMenu(locOption, locSubMenu)
+
+    locSubMenu:addOption(
+      "Grant Permission",
+      admin,
+      function()
+        PlayerTierHandler.adminSetLocationPermission(admin, targetPlayer, loc.code, 1)
+      end
+    )
+
+    locSubMenu:addOption(
+      "Revoke Permission",
+      admin,
+      function()
+        PlayerTierHandler.adminSetLocationPermission(admin, targetPlayer, loc.code, 0)
+      end
+    )
   end
 end
 

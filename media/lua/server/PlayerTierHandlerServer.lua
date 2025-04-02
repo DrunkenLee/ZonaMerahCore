@@ -133,8 +133,11 @@ end
 function ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
   if not player then return end
   local username = player:getUsername()
-  -- Use the level passed from client instead of reading from modData
+  -- Use the values passed from client
   local level = args.exoLevel
+  local mdUnlocked = args.MDUnlocked or 0
+  local rsUnlocked = args.RSUnlocked or 0
+  local lvUnlocked = args.LVUnlocked or 0
 
   local filePath = "server-player-exo-level.ini"
   local data = {}
@@ -144,26 +147,46 @@ function ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
   if file then
       local line = file:readLine()
       while line do
-          local user, exoLevel = line:match("([^,]+),([^,]+)")
-          data[user] = tonumber(exoLevel) or 1
+          local user, exoLevel, md, rs, lv = line:match("([^,]+),([^,]+),([^,]+),([^,]+),([^,]+)")
+          data[user] = {
+            level = tonumber(exoLevel) or 1,
+            md = tonumber(md) or 0,
+            rs = tonumber(rs) or 0,
+            lv = tonumber(lv) or 0
+          }
           line = file:readLine()
       end
       file:close()
   end
 
   -- Update the data with the current player's information
-  data[username] = level
+  data[username] = {
+    level = level,
+    md = mdUnlocked,
+    rs = rsUnlocked,
+    lv = lvUnlocked
+  }
 
   -- Write the updated data back to the file
   local fileWriter = getFileWriter(filePath, true, false)
   if fileWriter then
-      for user, userLevel in pairs(data) do
-          fileWriter:write(string.format("%s,%d\n", user, userLevel))
+      for user, userData in pairs(data) do
+          fileWriter:write(string.format("%s,%d,%d,%d,%d\n", user, userData.level, userData.md, userData.rs, userData.lv))
       end
       fileWriter:close()
-      print("[ServerPlayerTierHandler] Saved exo operator level for user: " .. username .. " - Level: " .. level)
-      sendServerCommand(player, "PlayerTierHandler", "saveExoOperatorLevelResponse",
-        { username = username, exoLevel = level })
+      print("[ServerPlayerTierHandler] Saved exo operator data for user: " .. username ..
+            " - Level: " .. level ..
+            ", MD: " .. mdUnlocked ..
+            ", RS: " .. rsUnlocked ..
+            ", LV: " .. lvUnlocked)
+
+      sendServerCommand(player, "PlayerTierHandler", "saveExoOperatorLevelResponse", {
+        username = username,
+        exoLevel = level,
+        MDUnlocked = mdUnlocked,
+        RSUnlocked = rsUnlocked,
+        LVUnlocked = lvUnlocked
+      })
   else
       error("Failed to open file for writing: " .. filePath)
   end
@@ -178,28 +201,47 @@ function ServerPlayerTierHandler.loadPlayerExoOperatorLevel(player)
   local file = getFileReader(filePath, true)
   if not file then
       print("[ServerPlayerTierHandler] No saved exo operator level data found for user: " .. username)
-      sendServerCommand(player, "PlayerTierHandler", "loadExoOperatorLevelResponse",
-        { username = username, exoLevel = 1 })
-      return 1
+      sendServerCommand(player, "PlayerTierHandler", "loadExoOperatorLevelResponse", {
+        username = username,
+        exoLevel = 1,
+        MDUnlocked = 0,
+        RSUnlocked = 0,
+        LVUnlocked = 0
+      })
+      return
   end
 
   local data = {}
   local line = file:readLine()
   while line do
-      local user, exoLevel = line:match("([^,]+),([^,]+)")
-      data[user] = tonumber(exoLevel) or 1
+      local user, exoLevel, md, rs, lv = line:match("([^,]+),([^,]+),([^,]+),([^,]+),([^,]+)")
+      if user then
+        data[user] = {
+          level = tonumber(exoLevel) or 1,
+          md = tonumber(md) or 0,
+          rs = tonumber(rs) or 0,
+          lv = tonumber(lv) or 0
+        }
+      end
       line = file:readLine()
   end
   file:close()
 
-  local level = data[username] or 1
-  print("[ServerPlayerTierHandler] Loaded exo operator level for user: " .. username .. " - Level: " .. level)
+  local userData = data[username] or { level = 1, md = 0, rs = 0, lv = 0 }
+  print("[ServerPlayerTierHandler] Loaded exo operator data for user: " .. username ..
+        " - Level: " .. userData.level ..
+        ", MD: " .. userData.md ..
+        ", RS: " .. userData.rs ..
+        ", LV: " .. userData.lv)
 
   -- Send response back to client
-  sendServerCommand(player, "PlayerTierHandler", "loadExoOperatorLevelResponse",
-      { username = username, exoLevel = level })
-
-  return level
+  sendServerCommand(player, "PlayerTierHandler", "loadExoOperatorLevelResponse", {
+      username = username,
+      exoLevel = userData.level,
+      MDUnlocked = userData.md,
+      RSUnlocked = userData.rs,
+      LVUnlocked = userData.lv
+  })
 end
 
 function ServerPlayerTierHandler.setPlayerTier(admin, args)
