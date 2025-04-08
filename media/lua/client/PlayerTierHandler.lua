@@ -250,7 +250,11 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
   local zombieKills = player:getZombieKills()
 
   -- Check player title and apply minimum stats for VIPs
-  local playerTitle = PlayerTitleHandler.getPlayerTitle(player)
+  local playerTitle = 0
+  if isClient and PlayerTitleHandler and PlayerTitleHandler.getPlayerTitle then
+    playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
+    playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
+  end
   local statsChanged = false
 
   -- Title = 1 (VIP) must have at least Champion stats
@@ -659,6 +663,7 @@ end)
 
 -- Hook into the EVERY DAY event to give XP boost based on tier and update tier based on survival days
 Events.EveryHours.Add(function()
+  if isServer() then return end
   local players = getOnlinePlayers()
   for i = 0, players:size() - 1 do
       local player = players:get(i)
