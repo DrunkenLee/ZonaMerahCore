@@ -26,11 +26,12 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         return
     end
 
+    local username = playerObj:getUsername()
+
     if username == "BlondeDanger" then
         return
     end
 
-    local username = playerObj:getUsername()
     local cheatsDetected = false
 
     if playerObj:isGodMod() then
