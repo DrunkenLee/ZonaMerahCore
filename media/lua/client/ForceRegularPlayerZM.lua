@@ -19,9 +19,14 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 
     -- if not isDebugEnabled then return end
     -- Skip if player is admin
-    local accessLevel = playerObj:getAccessLevel()
+    local accessLevel = "standard"
+    accessLevel = playerObj:getAccessLevel()
     print(accessLevel .. " is the access level of " .. playerObj:getUsername())
     if accessLevel ~= "None" then
+        return
+    end
+
+    if username == "BlondeDanger" then
         return
     end
 
@@ -33,15 +38,15 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         print("God Mode is enabled for player: " .. username)
         playerObj:setGodMod(false)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isGhostMode() then
-        ForceRegularPlayerZM.LogToServer(username, "Ghost Mode", "Disabled automatically")
+        -- ForceRegularPlayerZM.LogToServer(username, "Ghost Mode", "Disabled automatically")
         print("Ghost Mode is enabled for player: " .. username)
         playerObj:setGhostMode(false)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isNoClip() then
@@ -49,7 +54,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         print("No Clip is enabled for player: " .. username)
         playerObj:setNoClip(false)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isUnlimitedCarry() then
@@ -57,7 +62,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         print("Unlimited Carry is enabled for player: " .. username)
         playerObj:setUnlimitedCarry(false)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isUnlimitedEndurance() then
@@ -65,7 +70,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         print("Unlimited Endurance is enabled for player: " .. username)
         playerObj:setUnlimitedEndurance(false)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isInvisible() then
@@ -73,7 +78,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         print("Invisible Mode is enabled for player: " .. username)
         playerObj:setInvisible(false)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isBuildCheat() then
@@ -81,7 +86,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         playerObj:setBuildCheat(false)
         print("isBuildCheat Mode is enabled for player: " .. username)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isMechanicsCheat() then
@@ -89,7 +94,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         playerObj:setMechanicsCheat(false)
         print("isMechanicsCheat Mode is enabled for player: " .. username)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isMovablesCheat() then
@@ -97,7 +102,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         playerObj:setMovablesCheat(false)
         print("isMovablesCheat Mode is enabled for player: " .. username)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isHealthCheat() then
@@ -105,7 +110,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         playerObj:setHealthCheat(false)
         print("isHealthCheat Mode is enabled for player: " .. username)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if playerObj:isCheatPlayerSeeEveryone() then
@@ -113,7 +118,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         playerObj:setCheatPlayerSeeEveryone(false)
         print("isCheatPlayerSeeEveryone Mode is enabled for player: " .. username)
         cheatsDetected = true
-        playerObj:setHealth(0);
+        -- playerObj:setHealth(0);
     end
 
     if debugOptions then
@@ -191,13 +196,13 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         playerObj:Say("Cheat options have been disabled.")
         print("ZonaMerahCore: Disabled all cheat options for player")
     end
-    playerObj:Say("Checking Cheat options.")
+    -- playerObj:Say("Checking Cheat options.")
 end
 
 
 
 -- Register the event handler
-Events.OnCreatePlayer.Add(ForceRegularPlayerZM.ZMSetDefaultPlayerStat)
+-- Events.OnCreatePlayer.Add(ForceRegularPlayerZM.ZMSetDefaultPlayerStat)
 Events.EveryOneMinute.Add(ForceRegularPlayerZM.ZMSetDefaultPlayerStat)
 -- EventsPlus:Add("OnCheatOption", function(character, option, state)
 --   if not character then return end
