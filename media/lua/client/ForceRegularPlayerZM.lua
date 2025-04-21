@@ -90,6 +90,11 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     end
 
     if not skipUnlimitedEndurance and playerObj:isUnlimitedEndurance() then
+        local tierValue = PlayerTierHandler.getPlayerTierValue(playerObj) or 1
+        if tierValue == 8 then
+            skipUnlimitedEndurance = true
+        end
+
         ForceRegularPlayerZM.LogToServer(username, "Unlimited Endurance", "Disabled automatically")
         print("Unlimited Endurance is enabled for player: " .. username)
         playerObj:setUnlimitedEndurance(false)
