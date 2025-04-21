@@ -185,6 +185,8 @@ end
 function PlayerTierHandler.updateTierAndGiveXPBoost(player)
   PlayerTierHandler.updatePlayerTier(player)
   PlayerTierHandler.giveXPBoost(player)
+  -- Send command to server to set unlimited endurance and trait if needed
+  sendClientCommand("PlayerTierHandler", "setUnlimitedEnduranceAndTrait", { username = player:getUsername() })
   player:Say("Your tier has been updated and boost applied.")
 end
 
