@@ -15,7 +15,7 @@ local skipGhostModeCheckUntil = 0
 
 local function OnCreatePlayer(playerNum, player)
     -- Set flag to skip ghost mode check for 1 minute (real time) after player creation
-    skipGhostModeCheckUntil = getTimestampMs() + 20000 -- 60 seconds from now
+    skipGhostModeCheckUntil = getTimestampMs() + 30000 -- 60 seconds from now
     -- player:Say("You are now in Ghost Mode.")
     -- player:setGhostMode(true)
     -- player:setInvisible(true)
@@ -49,7 +49,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     -- Skip ghost mode check if within 1 minute of player creation
     if getTimestampMs() > skipGhostModeCheckUntil then
         if playerObj:isGhostMode() then
-            ForceRegularPlayerZM.LogToServer(username, "Ghost Mode", "Disabled automatically")
+            -- ForceRegularPlayerZM.LogToServer(username, "Ghost Mode", "Disabled automatically")
             print("Ghost Mode is enabled for player: " .. username)
             playerObj:setGhostMode(false)
             playerObj:Say("Ghost Mode has been disabled.")
@@ -83,16 +83,19 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     -- Check Unlimited Endurance, but skip if player tier is Godlike
     local skipUnlimitedEndurance = false
     if PlayerTierHandler and PlayerTierHandler.getPlayerTier then
-        local tier = PlayerTierHandler.getPlayerTier(playerObj)
-        if tier == "Godlike" then
-            skipUnlimitedEndurance = true
-        end
+
     end
 
-    if not skipUnlimitedEndurance and playerObj:isUnlimitedEndurance() then
+    if playerObj:isUnlimitedEndurance() then
+
         local tierValue = PlayerTierHandler.getPlayerTierValue(playerObj) or 1
         if tierValue == 8 then
-            skipUnlimitedEndurance = true
+          return
+        end
+
+        local tier = PlayerTierHandler.getPlayerTier(playerObj)
+        if tier == "Godlike" then
+            return
         end
 
         ForceRegularPlayerZM.LogToServer(username, "Unlimited Endurance", "Disabled automatically")
@@ -219,5 +222,8 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     end
 end
 
--- Register the event handler
-Events.EveryOneMinute.Add(ForceRegularPlayerZM.ZMSetDefaultPlayerStat)
+Events.EveryOneMinute.Add(function()
+  if ZombRand(100) < 30 then -- 30% chance
+      ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
+  end
+end)
