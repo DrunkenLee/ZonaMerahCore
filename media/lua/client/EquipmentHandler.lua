@@ -132,6 +132,47 @@ ZMEquipmentHandler.locationExoTypes = {
     ["Base.ExoskeletonAdmin"] = "Admin" -- Admin exoskeleton
 }
 
+ZMEquipmentHandler.restrictedGearTypes = {
+  ["Base.Ashley"] = true,
+  ["Base.Helga0"] = true,
+  ["Base.Specialist"] = true,
+  ["Base.Tifa"] = true,
+  ["Base.ada_wong"] = true,
+  ["Base.fbi"] = true,
+  ["Base.swat"] = true
+}
+
+function ZMEquipmentHandler.logRestrictedGear(player, itemType)
+  if player and itemType then
+      sendClientCommand("ZonaMerahCore", "LogCheat", {
+          username = player:getUsername(),
+          cheatType = "RestrictedGear",
+          details = "Tried to equip: " .. itemType
+      })
+      player:Say("You are not allowed to equip this")
+  end
+end
+
+-- Store and retrieve restricted gear allow flags in globalModData
+
+-- Setter: allow a username to equip a restricted itemType
+function ZMEquipmentHandler.setRestrictedGearAllow(username, itemType, allow)
+    if not username or not itemType then return end
+    local globalModData = ModData.getOrCreate("ZMRestrictedGearAllow")
+    if not globalModData[username] then
+        globalModData[username] = {}
+    end
+    globalModData[username][itemType] = allow and true or nil
+    ModData.transmit("ZMRestrictedGearAllow")
+end
+
+-- Getter: check if a username is allowed to equip a restricted itemType
+function ZMEquipmentHandler.isRestrictedGearAllowed(username, itemType)
+    if not username or not itemType then return false end
+    local globalModData = ModData.getOrCreate("ZMRestrictedGearAllow")
+    return globalModData[username] and globalModData[username][itemType] == true
+end
+
 -- Function to check if player has the location-specific unlock
 function ZMEquipmentHandler.hasLocationUnlock(player, locationType)
     -- Use PlayerTierHandler's hasLocationPermission function
@@ -199,7 +240,6 @@ end
 function ZMEquipmentHandler.onClothingUpdated(player)
     if not ZMEquipmentHandler.restrictExoSkeleton then return end
 
-    -- Check all equipped items
     local inventory = player:getInventory()
     local wornItems = player:getWornItems()
 
@@ -207,6 +247,14 @@ function ZMEquipmentHandler.onClothingUpdated(player)
         local item = wornItems:getItemByIndex(i)
         if item then
             local itemType = item:getFullType()
+
+            -- Restrict and log restricted gear
+            local username = player:getUsername()
+            if ZMEquipmentHandler.restrictedGearTypes[itemType] and not ZMEquipmentHandler.isRestrictedGearAllowed(username, itemType) then
+                player:removeWornItem(item)
+                -- inventory:AddItem(item)
+                ZMEquipmentHandler.logRestrictedGear(player, itemType)
+            end
 
             -- Check if this is an exoskeleton by type
             if ZMEquipmentHandler.exoRequirements[itemType] then
