@@ -223,7 +223,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 end
 
 Events.EveryOneMinute.Add(function()
-  if ZombRand(100) < 30 then -- 30% chance
+  if ZombRand(100) < 10 then -- 10% chance
       ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
   end
 end)

@@ -187,7 +187,7 @@ function PlayerTierHandler.updateTierAndGiveXPBoost(player)
   PlayerTierHandler.giveXPBoost(player)
   -- Send command to server to set unlimited endurance and trait if needed
   sendClientCommand("PlayerTierHandler", "setUnlimitedEnduranceAndTrait", { username = player:getUsername() })
-  player:Say("Your tier has been updated and boost applied.")
+  -- player:Say("Your tier has been updated and boost applied.")
 end
 
 -- Function to add "Check My Tier" option to the player's context menu
@@ -241,7 +241,7 @@ function PlayerTierHandler.giveXPBoost(player)
   end
 
   SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
-  player:Say(message)
+  -- player:Say(message)
 end
 
 function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
@@ -255,7 +255,7 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
   local playerTitle = 0
   if isClient and PlayerTitleHandler and PlayerTitleHandler.getPlayerTitle then
     playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
-    playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
+    playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player))
   end
   local statsChanged = false
 
@@ -363,7 +363,7 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
       modData.PlayerTier = newTier
       modData.PlayerTierValue = newTierValue
       local intSurvivalDays = math.floor(survivalDays)
-      player:Say("You have survived for " .. intSurvivalDays .. " days with " .. zombieKills .. " zombie kills and have been promoted to " .. newTier)
+      -- player:Say("You have survived for " .. intSurvivalDays .. " days with " .. zombieKills .. " zombie kills and have been promoted to " .. newTier)
 
       -- Add message if tier was upgraded due to title status
       if (playerTitle == 1 and newTierValue == 4 and survivalDays <= 20) or
