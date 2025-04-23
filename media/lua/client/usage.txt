@@ -1,0 +1,7 @@
+ZMEquipmentHandler.setRestrictedGearAllow(username, itemType, true) -- sets the itemType as allowed for the user
+
+ZMEquipmentHandler.isRestrictedGearAllowed(username, itemType) -- returns true if the itemType is allowed for the user, false otherwise
+
+
+
+// ZMEquipmentHandler.setRestrictedGearAllow("admin", "Base.ada_wong", true)
