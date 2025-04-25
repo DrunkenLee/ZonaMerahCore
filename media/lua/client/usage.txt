@@ -5,3 +5,5 @@ ZMEquipmentHandler.isRestrictedGearAllowed(username, itemType) -- returns true i
 
 
 // ZMEquipmentHandler.setRestrictedGearAllow("admin", "Base.ada_wong", true)
+
+// ZMPlayerInventoryHandler.StripPlayerInventory(getPlayer())
