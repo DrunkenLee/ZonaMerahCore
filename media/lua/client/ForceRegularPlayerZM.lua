@@ -15,7 +15,7 @@ local skipGhostModeCheckUntil = 0
 
 local function OnCreatePlayer(playerNum, player)
     -- Set flag to skip ghost mode check for 1 minute (real time) after player creation
-    skipGhostModeCheckUntil = getTimestampMs() + 30000 -- 60 seconds from now
+    skipGhostModeCheckUntil = getTimestampMs() + 60000 -- 60 seconds from now
     -- player:Say("You are now in Ghost Mode.")
     -- player:setGhostMode(true)
     -- player:setInvisible(true)
