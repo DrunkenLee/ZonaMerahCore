@@ -284,9 +284,8 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
     end
   end
 
-  -- Title >= 2 (VVIP or MVP) must have at least Legend stats
   if playerTitle >= 2 then
-    local minDays = 31  -- > 30 days needed for Legend
+    local minDays = 31
     local minKills = 4000
 
     if survivalDays < minDays then
