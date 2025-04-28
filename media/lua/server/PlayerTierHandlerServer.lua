@@ -8,7 +8,7 @@ ServerPlayerTierHandler = {}
 function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
     local tier = PlayerTierHandler.getPlayerTier(player) or "NO_TIER"
     if tier == "Godlike" then
-        player:setUnlimitedEndurance(true)
+        player:setUnlimitedEndurance(false)
         if not player:HasTrait("Desensitized") then
             player:getTraits():add("Desensitized")
         end

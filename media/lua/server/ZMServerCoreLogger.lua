@@ -1,8 +1,5 @@
--- Server command handler for ZonaMerahCore cheat detection
-
 local Commands = {}
 
--- Simple function to handle cheat logging from clients
 Commands.LogCheat = function(player, args)
     local username = args.username
     local cheatType = args.cheatType
@@ -16,7 +13,6 @@ Commands.LogCheat = function(player, args)
           "' used cheat '" .. cheatType .. "' - " .. details)
 end
 
--- Register server command handlers
 local onClientCommand = function(module, command, player, args)
     if module == "ZonaMerahCore" and Commands[command] then
         Commands[command](player, args)
