@@ -7,3 +7,6 @@ ZMEquipmentHandler.isRestrictedGearAllowed(username, itemType) -- returns true i
 // ZMEquipmentHandler.setRestrictedGearAllow("admin", "Base.ada_wong", true)
 // ZMEquipmentHandler.setRestrictedGearAllow(getPlayer():getUsername(), "Base.ada_wong", true)
 // ZMPlayerInventoryHandler.StripPlayerInventory(getPlayer())
+
+// showMedicalDetailUI()
+// ZM_MedicalCheck.checkMedicalStatus(getPlayer())
