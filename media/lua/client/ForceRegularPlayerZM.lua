@@ -60,6 +60,10 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     end
 
     if playerObj:isGodMod() then
+        loca isGodModAllowed = PlayerFlagHandler.getFlag("godmode_allow")
+        if isGodModAllowed then
+            return
+        end
         ForceRegularPlayerZM.LogToServer(username, "God Mode", "Disabled automatically")
         print("God Mode is enabled for player: " .. username)
         playerObj:setGodMod(false)
