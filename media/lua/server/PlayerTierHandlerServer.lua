@@ -4,7 +4,6 @@ require "PlayerTitleHandler"
 
 ServerPlayerTierHandler = {}
 
--- Function to set unlimited endurance for GODLIKE tier and add a trait
 function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
     local tier = PlayerTierHandler.getPlayerTier(player) or "NO_TIER"
     if tier == "Godlike" then
@@ -33,7 +32,6 @@ function ServerPlayerTierHandler.savePlayerSurvivedHours(player)
   local filePath = "server-player-tier.ini"
   local data = {}
 
-  -- Read existing data from the file
   local file = getFileReader(filePath, true)
   if file then
       local line = file:readLine()
@@ -45,10 +43,8 @@ function ServerPlayerTierHandler.savePlayerSurvivedHours(player)
       file:close()
   end
 
-  -- Update the data with the current player's information
   data[username] = { hours = hoursSurvived, kills = zombieKills }
 
-  -- Write the updated data back to the file
   local fileWriter = getFileWriter(filePath, true, false)
   if fileWriter then
       for user, userData in pairs(data) do
@@ -63,11 +59,8 @@ function ServerPlayerTierHandler.savePlayerSurvivedHours(player)
   end
 end
 
--- Function to load the player's tier data from a file
 function ServerPlayerTierHandler.loadPlayerSurvivedHours(player, args)
   if not player then return end
-
-  -- Use the username from args if provided, otherwise use the player's username
   local username = args and args.username or player:getUsername()
 
   local filePath = "server-player-tier.ini"
@@ -92,14 +85,12 @@ function ServerPlayerTierHandler.loadPlayerSurvivedHours(player, args)
   print("[ServerPlayerTierHandler] Loaded tier data for user: " .. username ..
       " - Hours: " .. userData.hours .. ", Kills: " .. userData.kills)
 
-  -- Send response back to client
   sendServerCommand(player, "PlayerTierHandler", "loadSurvivedHoursResponse",
       { username = username, hours = userData.hours, zombieKills = userData.kills })
 
   return userData.hours, userData.kills
 end
 
--- Function to save the player's Exo Operator Level to a file
 function ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
   if not player then return end
   local username = player:getUsername()
@@ -129,7 +120,6 @@ function ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
       file:close()
   end
 
-  -- Update the data with the current player's information
   data[username] = {
     level = level,
     md = mdUnlocked,
@@ -137,7 +127,6 @@ function ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
     lv = lvUnlocked
   }
 
-  -- Write the updated data back to the file
   local fileWriter = getFileWriter(filePath, true, false)
   if fileWriter then
       for user, userData in pairs(data) do
@@ -162,7 +151,6 @@ function ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
   end
 end
 
--- Function to load the player's Exo Operator Level from a file
 function ServerPlayerTierHandler.loadPlayerExoOperatorLevel(player)
   if not player then return end
   local username = player:getUsername()
@@ -221,11 +209,9 @@ function ServerPlayerTierHandler.setPlayerTier(admin, args)
       return
   end
 
-  -- Get the target player by username
   local targetUsername = args.targetUsername
   local targetPlayer = nil
 
-  -- Find the target player in the online players
   local players = getOnlinePlayers()
   for i = 0, players:size() - 1 do
       local player = players:get(i)
@@ -244,12 +230,10 @@ function ServerPlayerTierHandler.setPlayerTier(admin, args)
   local tier = args.tier
   print("[ServerPlayerTierHandler] Attempting to set " .. targetUsername .. "'s tier to: " .. tostring(tier))
 
-  -- Validate tier is in the available tiers
   local validTier = false
   local tierValue = 1
   local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend", "Immortal", "Mythic", "Godlike" }
 
-  -- FIX: Don't use the same variable name for the loop counter and flag
   for i, tierName in ipairs(availableTiers) do
       if tier == tierName then
           validTier = true
@@ -264,13 +248,11 @@ function ServerPlayerTierHandler.setPlayerTier(admin, args)
       return
   end
 
-  -- Update target player's tier
   local modData = targetPlayer:getModData()
   modData.PlayerTier = tier
   modData.PlayerTierValue = tierValue
   modData.TierSetManually = true
 
-  -- Save the tier to the server tier file
   local filePath = "server-player-tier-manual.ini"
   local fileWriter = getFileWriter(filePath, true, false)
   if fileWriter then
@@ -278,11 +260,9 @@ function ServerPlayerTierHandler.setPlayerTier(admin, args)
       fileWriter:close()
   end
 
-  -- Notify admin of success
   sendServerCommand(admin, "PlayerTierHandler", "tierSetResponse",
       { message = "Successfully set " .. targetUsername .. "'s tier to " .. tier })
 
-  -- Notify target player of tier change
   sendServerCommand(targetPlayer, "PlayerTierHandler", "tierUpdated",
       { tier = tier, tierValue = tierValue,
         message = "An admin has set your tier to " .. tier })
@@ -291,7 +271,6 @@ function ServerPlayerTierHandler.setPlayerTier(admin, args)
         " set " .. targetUsername .. "'s tier to " .. tier)
 end
 
--- Update the OnClientCommand handler to process exo operator level commands
 Events.OnClientCommand.Add(function(module, command, player, args)
   if module == "PlayerTierHandler" then
       if command == "saveSurvivedHours" then
@@ -323,7 +302,6 @@ end)
 Events.EveryDays.Add(function()
     for i = 0, getNumActivePlayers() - 1 do
         local player = getSpecificPlayer(i)
-        -- local username = player:getUsername()
         if player then
             ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
         end

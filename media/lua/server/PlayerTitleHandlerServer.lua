@@ -2,7 +2,6 @@ require "PlayerTitleHandler"
 
 ServerPlayerTitleHandler = {}
 
--- Function to save the player's title to a file
 function ServerPlayerTitleHandler.savePlayerTitle(player, args)
     if not player or not args.username or not args.title then return end
 
@@ -14,13 +13,12 @@ function ServerPlayerTitleHandler.savePlayerTitle(player, args)
     local filePath = "server-player-titles.ini"
     local data = {}
 
-    -- Read existing data from the file to preserve other players' titles
     local file = getFileReader(filePath, true)
     if file then
         local line = file:readLine()
         while line do
             local user, savedTitle = line:match("([^,]+),([^,]+)")
-            if user and user ~= username then -- Skip the current player's entry, we'll update it
+            if user and user ~= username then
                 data[user] = savedTitle
             end
             line = file:readLine()
@@ -28,10 +26,8 @@ function ServerPlayerTitleHandler.savePlayerTitle(player, args)
         file:close()
     end
 
-    -- Update the data with the current player's title
     data[username] = title
 
-    -- Write the updated data back to the file
     local fileWriter = getFileWriter(filePath, true, false)
     if fileWriter then
         for user, userTitle in pairs(data) do
@@ -40,7 +36,6 @@ function ServerPlayerTitleHandler.savePlayerTitle(player, args)
         fileWriter:close()
         print("[ServerPlayerTitleHandler] Successfully saved title for " .. username)
 
-        -- Send confirmation back to client
         sendServerCommand(player, "PlayerTitleHandler", "titleSaveResponse", {
             success = true,
             message = "Your title has been saved on the server."
@@ -54,11 +49,9 @@ function ServerPlayerTitleHandler.savePlayerTitle(player, args)
     end
 end
 
--- Function to load the player's title from a file
 function ServerPlayerTitleHandler.loadPlayerTitle(player, args)
     if not player then return 0 end
 
-    -- Use the username from args if provided, otherwise use the player's username
     local username = args and args.username or player:getUsername()
 
     local filePath = "server-player-titles.ini"
@@ -81,7 +74,6 @@ function ServerPlayerTitleHandler.loadPlayerTitle(player, args)
 
     print("[ServerPlayerTitleHandler] Loaded title " .. title .. " for player " .. username)
 
-    -- Send response back to client
     sendServerCommand(player, "PlayerTitleHandler", "loadPlayerTitleResponse", {
         username = username,
         title = title
@@ -90,7 +82,6 @@ function ServerPlayerTitleHandler.loadPlayerTitle(player, args)
     return title
 end
 
--- Handler for client commands
 Events.OnClientCommand.Add(function(module, command, player, args)
     if module == "PlayerTitleHandler" then
         if command == "savePlayerTitle" then
