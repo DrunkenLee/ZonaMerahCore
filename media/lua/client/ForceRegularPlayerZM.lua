@@ -50,7 +50,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
             -- ForceRegularPlayerZM.LogToServer(username, "Ghost Mode", "Disabled automatically")
             print("Ghost Mode is enabled for player: " .. username)
             playerObj:setGhostMode(false)
-            playerObj:Say("Ghost Mode has been disabled.")
+            -- playerObj:Say("Ghost Mode has been disabled.")
             cheatsDetected = true
         end
     else
@@ -58,7 +58,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     end
 
     if playerObj:isGodMod() then
-        loca isGodModAllowed = PlayerFlagHandler.getFlag("godmode_allow")
+        local isGodModAllowed = PlayerFlagHandler.getFlag("godmode_allow")
         if isGodModAllowed then
             return
         end
@@ -175,7 +175,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 
         if isCheatSeeEveryoneOn then
             ForceRegularPlayerZM.LogToServer(username, "See Everyone", "Disabled automatically")
-            PlayerObj:Say("Cheat.Player.SeeEveryone is enabled")
+            -- PlayerObj:Say("Cheat.Player.SeeEveryone is enabled")
             debugOptions:setBoolean("Cheat.Player.SeeEveryone", false)
             print("ZonaMerahCore: Disabled See Everyone for player " .. username)
             cheatsDetected = true
@@ -190,7 +190,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 
         if isMechanicCheatOn then
             ForceRegularPlayerZM.LogToServer(username, "MechanicsEverywhere", "Disabled automatically")
-            PlayerObj:Say("MechanicsAnywhere is enabled")
+            -- PlayerObj:Say("MechanicsAnywhere is enabled")
             print("Mechanic Cheat currently: " .. tostring(isMechanicCheatOn) .. " for " .. username)
             debugOptions:setBoolean("Cheat.Vehicle.MechanicsAnywhere", false)
             print("ZonaMerahCore: Disabled MechanicsAnywhere for player " .. username)
@@ -199,7 +199,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 
         if isVehicleSpawnEveryWhere then
             ForceRegularPlayerZM.LogToServer(username, "VehicleEverywhere", "Disabled automatically")
-            PlayerObj:Say("Vehicle.Spawn.Everywhere is enabled")
+            -- PlayerObj:Say("Vehicle.Spawn.Everywhere is enabled")
             print("Vehicle.Spawn.Everywhere Cheat currently: " .. tostring(isVehicleSpawnEveryWhere) .. " for " .. username)
             debugOptions:setBoolean("Vehicle.Spawn.Everywhere ", false)
             print("ZonaMerahCore: Disabled Vehicle.Spawn.Everywhere for player " .. username)
@@ -208,7 +208,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 
         if isKnowAllRecip then
             ForceRegularPlayerZM.LogToServer(username, "Cheat.Recipe.KnowAll", "Disabled automatically")
-            PlayerObj:Say("Cheat.Recipe.KnowAll is enabled")
+            -- PlayerObj:Say("Cheat.Recipe.KnowAll is enabled")
             print("Cheat.Recipe.KnowAll currently: " .. tostring(isKnowAllRecip) .. " for " .. username)
             debugOptions:setBoolean("Cheat.Recipe.KnowAll ", false)
             print("ZonaMerahCore: Disabled Cheat.Recipe.KnowAll for player " .. username)
@@ -219,13 +219,14 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     playerObj:save()
 
     if cheatsDetected then
-        playerObj:Say("Cheat options have been disabled.")
+        -- playerObj:Say("Cheat options have been disabled.")
         print("ZonaMerahCore: Disabled all cheat options for player")
     end
 end
 
 Events.EveryOneMinute.Add(function()
-  if ZombRand(100) < 20 then -- 10% chance
-      ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
-  end
+    local playerObj = getPlayer()
+    if not playerObj then return end
+    -- playerObj:Say("Checking for cheats...")
+    ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 end)

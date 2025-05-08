@@ -1,12 +1,7 @@
 -- ZonaMerah Reflection Utilities
--- Provides tools to inspect Java objects in Project Zomboid
 
 ZM_ReflectionUtils = {}
 
---- Inspect a Java object and get all its fields and methods
--- @param object The Java object to inspect
--- @param options Optional table with inspection options
--- @return A table containing inspection results
 function ZM_ReflectionUtils.inspectObject(object, options)
     options = options or {}
     local results = {
@@ -49,10 +44,6 @@ function ZM_ReflectionUtils.inspectObject(object, options)
     return results
 end
 
---- Try to call various method variants for a field name
--- @param object The Java object to call methods on
--- @param fieldName The field name to derive method names from
--- @return The value returned by the first successful method call, or "ERROR ACCESSING FIELD"
 function ZM_ReflectionUtils.tryMethodVariants(object, fieldName)
     if not fieldName then return "ERROR ACCESSING FIELD" end
 
@@ -81,9 +72,6 @@ function ZM_ReflectionUtils.tryMethodVariants(object, fieldName)
     return "ERROR ACCESSING FIELD"
 end
 
---- Attempt to discover methods on an object by trying common prefixes and terms
--- @param object The Java object to inspect
--- @param methodsTable Table where discovered methods will be stored
 function ZM_ReflectionUtils.discoverMethods(object, methodsTable)
     -- Try standard method discovery using PZ debug method if available
     if getTableValues and type(getTableValues) == "function" then
@@ -98,11 +86,6 @@ function ZM_ReflectionUtils.discoverMethods(object, methodsTable)
     end
 end
 
---- Write object inspection results to a file
--- @param results The inspection results from inspectObject
--- @param filePath The path where to write the file
--- @param header Optional header text for the file
--- @return true if file was written successfully, false otherwise
 function ZM_ReflectionUtils.writeInspectionToFile(results, filePath, header)
     if not results then
         print("Error: results is nil")
