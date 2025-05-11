@@ -240,7 +240,7 @@ function PlayerTierHandler.giveXPBoost(player)
       message = "Godlike Bonus Applied (+30%)"
   end
 
-  SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
+  -- SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
   -- player:Say(message)
 end
 

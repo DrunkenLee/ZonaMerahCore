@@ -1,7 +1,7 @@
 require "ISUI/ISPanel"
 require "ISUI/ISButton"
 require "ISUI/ISScrollingListBox"
-
+local HZ = HazardousZones.Client
 -- Simple UI for Medical Information Display
 MedicalDetailUI = ISPanel:derive("MedicalDetailUI")
 
@@ -38,8 +38,6 @@ function MedicalDetailUI:populateMedicalData()
     if not player then return end
 
     local bodyDamage = player:getBodyDamage()
-    -- getPlayer():getBodyDamage():setFoodSicknessLevel(10)
-    -- Clear existing data
     self.infoList:clear()
 
     -- Section: Overall Health
@@ -101,6 +99,18 @@ function MedicalDetailUI:populateMedicalData()
 
     -- Temperature - confirmed to exist
     self.infoList:addItem("  Body Temperature: " .. string.format("%.1f°C", bodyDamage:getTemperature()), nil)
+
+    -- Add Hazardous Zones data (rad and bhx)
+    local rad, bhx = 0, 0
+    if HZ and HZ.getPlayerExposures then
+        local exposures = HZ:getPlayerExposures()
+        if exposures then
+            rad = exposures.radiation or 0
+            bhx = exposures.biological or 0
+        end
+    end
+    self.infoList:addItem("  Radiation (rad): " .. tostring(rad), nil)
+    self.infoList:addItem("  Biological Hazard (bhx): " .. tostring(bhx), nil)
 
     -- Cold information - use CatchACold and ColdStrength only
     local catchAColdVal = 0
@@ -175,23 +185,36 @@ function MedicalDetailUI:populateMedicalData()
                 self.infoList:addItem("    Sneeze/Cough Delay: " .. sneezeCouchDelay, nil)
             end
 
+            -- HAZARDOUS ZONES
+            local rad = 0
+            local bhx = 0
+            local expData = HZ:getExpData()
+
+            rad = expData.radiation or 0
+            bhx = expData.biological or 0
+
             -- Only try to access timer values if coldStrength > 0
             local min, max = 0, 0
             if coldStrength > 50 then
-                pcall(function() min = bodyDamage.NastyColdSneezeTimerMin end)
-                pcall(function() max = bodyDamage.NastyColdSneezeTimerMax end)
+                pcall(function() min = bodyDamage.NastyColdSneezeTimerMin or 0 end)
+                pcall(function() max = bodyDamage.NastyColdSneezeTimerMax or 0 end)
+                print(string.rep("-", 40))
+                print("Nasty Cold Sneeze Timer Range:")
+                print("  Min:", min)
+                print("  Max:", max)
+                print(string.rep("-", 40))
                 if min > 0 or max > 0 then
                     self.infoList:addItem("    Sneeze Timer Range: " .. min .. "-" .. max .. " ticks", nil)
                 end
             elseif coldStrength > 20 then
-                pcall(function() min = bodyDamage.ColdSneezeTimerMin end)
-                pcall(function() max = bodyDamage.ColdSneezeTimerMax end)
+                pcall(function() min = bodyDamage.ColdSneezeTimerMin or 0 end)
+                pcall(function() max = bodyDamage.ColdSneezeTimerMax or 0 end)
                 if min > 0 or max > 0 then
                     self.infoList:addItem("    Sneeze Timer Range: " .. min .. "-" .. max .. " ticks", nil)
                 end
             else
-                pcall(function() min = bodyDamage.MildColdSneezeTimerMin end)
-                pcall(function() max = bodyDamage.MildColdSneezeTimerMax end)
+                pcall(function() min = bodyDamage.MildColdSneezeTimerMin or 0 end)
+                pcall(function() max = bodyDamage.MildColdSneezeTimerMax or 0 end)
                 if min > 0 or max > 0 then
                     self.infoList:addItem("    Sneeze Timer Range: " .. min .. "-" .. max .. " ticks", nil)
                 end
