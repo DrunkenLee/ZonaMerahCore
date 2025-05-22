@@ -31,7 +31,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     -- Skip if player is admin
     local accessLevel = "standard"
     accessLevel = playerObj:getAccessLevel()
-    print(accessLevel .. " is the access level of " .. playerObj:getUsername())
+    -- print(accessLevel .. " is the access level of " .. playerObj:getUsername())
     if accessLevel ~= "None" then
         return
     end

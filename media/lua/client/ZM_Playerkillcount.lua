@@ -96,25 +96,25 @@ local function OnWeaponHit(wielder, weapon, zombie, damage)
 end
 
 -- Hook into the OnCreatePlayer event to initialize kill count
-ZMKillcountHandler.onCreatePlayer = function(playerIndex, player)
-    ZMKillcountHandler.initKillCount(player)
-end
+-- ZMKillcountHandler.onCreatePlayer = function(playerIndex, player)
+--     ZMKillcountHandler.initKillCount(player)
+-- end
 
--- Register the event hooks
-Events.OnWeaponHitXp.Add(OnWeaponHit)
-Events.OnCreatePlayer.Add(ZMKillcountHandler.onCreatePlayer)
-Events.OnGameStart.Add(function()
-    local player = getSpecificPlayer(0)
-    if player then
-        ZMKillcountHandler.initKillCount(player)
-    end
+-- -- Register the event hooks
+-- Events.OnWeaponHitXp.Add(OnWeaponHit)
+-- Events.OnCreatePlayer.Add(ZMKillcountHandler.onCreatePlayer)
+-- Events.OnGameStart.Add(function()
+--     local player = getSpecificPlayer(0)
+--     if player then
+--         ZMKillcountHandler.initKillCount(player)
+--     end
 
-    -- Initial send of kill count
-    ZMKillcountHandler.sendKillCountToServer()
-end)
+--     -- Initial send of kill count
+--     ZMKillcountHandler.sendKillCountToServer()
+-- end)
 
 -- Send kill count to server every hour
-Events.EveryHours.Add(ZMKillcountHandler.sendKillCountToServer)
+-- Events.EveryHours.Add(ZMKillcountHandler.sendKillCountToServer)
 
 
 

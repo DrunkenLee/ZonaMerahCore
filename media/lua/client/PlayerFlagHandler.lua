@@ -23,7 +23,7 @@ function PlayerFlagHandler.getFlag(flagname)
   local player = getPlayer()
   if player and player:getModData() then
       local value = player:getModData()[flagname]
-      player:Say("Flag " .. flagname .. " is " .. tostring(value))
+      -- player:Say("Flag " .. flagname .. " is " .. tostring(value))
       return value
   end
 end

@@ -1,7 +1,10 @@
 require "ISUI/ISPanel"
 require "ISUI/ISButton"
 require "ISUI/ISScrollingListBox"
-local HZ = HazardousZones.Client
+local HZ = nil
+if HazardousZones and HazardousZones.Client then
+  HZ = HazardousZones.Client
+end
 -- Simple UI for Medical Information Display
 MedicalDetailUI = ISPanel:derive("MedicalDetailUI")
 
@@ -435,7 +438,64 @@ function MedicalDetailUI:new(x, y, width, height, player)
     return o
 end
 
--- Global function to show medical information
+function checkIfCanEnterZone(player)
+    if not player then return false end
+    local playerObj = player
+    if not playerObj then return false end
+
+    local bodyDamage = playerObj:getBodyDamage()
+    -- Check infection
+    print("[Zone Entry Check] Player infection status: " .. tostring(bodyDamage:IsInfected()))
+    print("[Zone Entry Check] Player fake infection status: " .. tostring(bodyDamage:IsFakeInfected()))
+    print("[Zone Entry Check] Player is has a cold: " .. tostring(bodyDamage:isHasACold()))
+    print("[Zone Entry Check] Player Poison Level: " .. tostring(bodyDamage:getFoodSicknessLevel()))
+
+    if bodyDamage:getFoodSicknessLevel() > 0 then return false end
+    if bodyDamage:isHasACold() then return false end
+    if bodyDamage:IsFakeInfected() then return false end
+    if bodyDamage:IsInfected() then return false end
+
+    -- Check bitten
+    local bodyParts = bodyDamage:getBodyParts()
+    for i = 0, bodyParts:size() - 1 do
+        local part = bodyParts:get(i)
+        if part and part:getBiteTime() > 0 then
+            return false
+        end
+    end
+
+    -- Check rad and bhx
+    local rad, bhx = 0, 0
+    if HZ and HZ.getPlayerExposures then
+        local exposures = HZ:getPlayerExposures()
+        if exposures then
+            rad = exposures.radiation or 0
+            bhx = exposures.biological or 0
+        end
+    end
+    if rad > 1 or bhx > 1 then return false end
+
+    return true
+end
+
+if HZ then
+    function HZ:setPlayerRadiation(value)
+        if not self or not self.getPlayerExposures then return end
+        local exposures = self:getPlayerExposures()
+        if exposures then
+            exposures.radiation = value
+        end
+    end
+
+    function HZ:setPlayerBiological(value)
+        if not self or not self.getPlayerExposures then return end
+        local exposures = self:getPlayerExposures()
+        if exposures then
+            exposures.biological = value
+        end
+    end
+end
+
 function showMedicalDetailUI(player)
     player = player or getPlayer()
     if not player then return end
@@ -447,16 +507,9 @@ function showMedicalDetailUI(player)
     return ui
 end
 
--- Add to global scope for console access
 if not _G.checkMedical then
     _G.checkMedical = showMedicalDetailUI
 end
 
--- Add key binding for medical check
--- local function onCustomUIKeyPressed(key)
---     if key == Keyboard.KEY_J then  -- You can change this to any key you prefer
---         showMedicalDetailUI()
---     end
--- end
 
 Events.OnKeyPressed.Add(onCustomUIKeyPressed)
