@@ -439,28 +439,51 @@ function MedicalDetailUI:new(x, y, width, height, player)
 end
 
 function checkIfCanEnterZone(player)
-    if not player then return -1 end
+    if not player then
+        CharacterManager.instance:removeFlag("extraction_allow_flag")
+        return false
+    end
+
     local playerObj = player
-    if not playerObj then return -1 end
+    if not playerObj then
+        CharacterManager.instance:removeFlag("extraction_allow_flag")
+        return false
+    end
 
     local bodyDamage = playerObj:getBodyDamage()
-    -- Check infection
+
     print("[Zone Entry Check] Player infection status: " .. tostring(bodyDamage:IsInfected()))
     print("[Zone Entry Check] Player fake infection status: " .. tostring(bodyDamage:IsFakeInfected()))
     print("[Zone Entry Check] Player is has a cold: " .. tostring(bodyDamage:isHasACold()))
     print("[Zone Entry Check] Player Poison Level: " .. tostring(bodyDamage:getFoodSicknessLevel()))
 
-    if bodyDamage:getFoodSicknessLevel() > 0 then return -1 end
-    if bodyDamage:isHasACold() then return -1 end
-    if bodyDamage:IsFakeInfected() then return -1 end
-    if bodyDamage:IsInfected() then return -1 end
+    if bodyDamage:getFoodSicknessLevel() > 0 then
+        CharacterManager.instance:removeFlag("extraction_allow_flag")
+        return false
+    end
+
+    if bodyDamage:isHasACold() then
+        CharacterManager.instance:removeFlag("extraction_allow_flag")
+        return false
+    end
+
+    if bodyDamage:IsFakeInfected() then
+        CharacterManager.instance:removeFlag("extraction_allow_flag")
+        return false
+    end
+
+    if bodyDamage:IsInfected() then
+        CharacterManager.instance:removeFlag("extraction_allow_flag")
+        return false
+    end
 
     -- Check bitten
     local bodyParts = bodyDamage:getBodyParts()
     for i = 0, bodyParts:size() - 1 do
         local part = bodyParts:get(i)
         if part and part:getBiteTime() > 0 then
-            return -1
+            CharacterManager.instance:removeFlag("extraction_allow_flag")
+            return false
         end
     end
 
@@ -473,9 +496,14 @@ function checkIfCanEnterZone(player)
             bhx = exposures.biological or 0
         end
     end
-    if rad > 1 or bhx > 1 then return -1 end
 
-    return 1
+    if rad > 1 or bhx > 1 then
+        CharacterManager.instance:removeFlag("extraction_allow_flag")
+        return false
+    end
+
+    CharacterManager.instance:addFlag("extraction_allow_flag")
+    return true
 end
 
 if HZ then
