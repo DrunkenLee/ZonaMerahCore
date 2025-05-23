@@ -439,9 +439,9 @@ function MedicalDetailUI:new(x, y, width, height, player)
 end
 
 function checkIfCanEnterZone(player)
-    if not player then return false end
+    if not player then return -1 end
     local playerObj = player
-    if not playerObj then return false end
+    if not playerObj then return -1 end
 
     local bodyDamage = playerObj:getBodyDamage()
     -- Check infection
@@ -450,17 +450,17 @@ function checkIfCanEnterZone(player)
     print("[Zone Entry Check] Player is has a cold: " .. tostring(bodyDamage:isHasACold()))
     print("[Zone Entry Check] Player Poison Level: " .. tostring(bodyDamage:getFoodSicknessLevel()))
 
-    if bodyDamage:getFoodSicknessLevel() > 0 then return false end
-    if bodyDamage:isHasACold() then return false end
-    if bodyDamage:IsFakeInfected() then return false end
-    if bodyDamage:IsInfected() then return false end
+    if bodyDamage:getFoodSicknessLevel() > 0 then return -1 end
+    if bodyDamage:isHasACold() then return -1 end
+    if bodyDamage:IsFakeInfected() then return -1 end
+    if bodyDamage:IsInfected() then return -1 end
 
     -- Check bitten
     local bodyParts = bodyDamage:getBodyParts()
     for i = 0, bodyParts:size() - 1 do
         local part = bodyParts:get(i)
         if part and part:getBiteTime() > 0 then
-            return false
+            return -1
         end
     end
 
@@ -473,9 +473,9 @@ function checkIfCanEnterZone(player)
             bhx = exposures.biological or 0
         end
     end
-    if rad > 1 or bhx > 1 then return false end
+    if rad > 1 or bhx > 1 then return -1 end
 
-    return true
+    return 1
 end
 
 if HZ then

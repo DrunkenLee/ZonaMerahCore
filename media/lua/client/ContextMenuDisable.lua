@@ -75,7 +75,7 @@ OnFillWorldObjectContextMenu = function(_playerNum, _context, _worldobjects, _te
       for i = 1, #_context.options do
           local option = _context.options[i]
           if option and option.name then
-              print("Option name: " .. option.name)
+              -- print("Option name: " .. option.name)
               if option.name == getText("ContextMenu_Grab") or
                  option.name:find("Grab") or
                  option.name:find("Equip") or
