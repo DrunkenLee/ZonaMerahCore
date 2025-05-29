@@ -1,19 +1,24 @@
 ZMServerKillcountHandler = ZMServerKillcountHandler or {}
 ZMServerKillcountHandler.killCounts = {}
-ZMServerKillcountHandler.iniFilePath = "ZonaMerah_KillCounts.ini"
+ZMServerKillcountHandler.ravenCreekKillCounts = {}
+
+-- Use separate file paths for each type of kill count
+ZMServerKillcountHandler.generalKillCountsPath = "ZonaMerah_KillCounts.ini"
+ZMServerKillcountHandler.ravenCreekKillCountsPath = "ZonaMerah_RavenCreekKillCounts.ini"
 
 -- Initialize the server-side handler
 ZMServerKillcountHandler.init = function()
-    -- Load existing kill counts from file
-    ZMServerKillcountHandler.loadKillCounts()
+    -- Load existing kill counts from files
+    ZMServerKillcountHandler.loadGeneralKillCounts()
+    ZMServerKillcountHandler.loadRavenCreekKillCounts()
     print("ZonaMerah: Initialized server kill count handler")
 end
 
--- Save kill counts to .ini file
-ZMServerKillcountHandler.saveKillCounts = function()
-    local file = getFileWriter(ZMServerKillcountHandler.iniFilePath, true, false)
+-- Save general kill counts to .ini file
+ZMServerKillcountHandler.saveGeneralKillCounts = function()
+    local file = getFileWriter(ZMServerKillcountHandler.generalKillCountsPath, false, false)
     if not file then
-        print("ERROR: ZonaMerah: Failed to open kill count file for writing")
+        print("ERROR: ZonaMerah: Failed to open general kill count file for writing")
         return
     end
 
@@ -26,13 +31,33 @@ ZMServerKillcountHandler.saveKillCounts = function()
     end
 
     file:close()
-    print("ZonaMerah: Saved kill counts to " .. ZMServerKillcountHandler.iniFilePath)
+    print("ZonaMerah: Saved general kill counts to " .. ZMServerKillcountHandler.generalKillCountsPath)
 end
 
--- Load kill counts from .ini file
-ZMServerKillcountHandler.loadKillCounts = function()
+-- Save RavenCreek kill counts to .ini file
+ZMServerKillcountHandler.saveRavenCreekKillCounts = function()
+    local file = getFileWriter(ZMServerKillcountHandler.ravenCreekKillCountsPath, false, false)
+    if not file then
+        print("ERROR: ZonaMerah: Failed to open RavenCreek kill count file for writing")
+        return
+    end
+
+    -- Write header
+    file:write("[RavenCreekKillCounts]\n")
+
+    -- Write each player's RavenCreek kill count
+    for username, count in pairs(ZMServerKillcountHandler.ravenCreekKillCounts) do
+        file:write(username .. "=" .. tostring(count) .. "\n")
+    end
+
+    file:close()
+    print("ZonaMerah: Saved RavenCreek kill counts to " .. ZMServerKillcountHandler.ravenCreekKillCountsPath)
+end
+
+-- Load general kill counts from .ini file
+ZMServerKillcountHandler.loadGeneralKillCounts = function()
     local counts = {}
-    local file = getFileReader(ZMServerKillcountHandler.iniFilePath, false)
+    local file = getFileReader(ZMServerKillcountHandler.generalKillCountsPath, false)
 
     if file then
         local line = file:readLine()
@@ -42,7 +67,7 @@ ZMServerKillcountHandler.loadKillCounts = function()
             -- Check for section header
             if line == "[KillCounts]" then
                 inKillCountsSection = true
-            elseif inKillCountsSection and line ~= "" then
+            elseif line ~= "" and inKillCountsSection then
                 -- Parse username=count line
                 local username, count = line:match("(.+)=(%d+)")
                 if username and count then
@@ -55,29 +80,80 @@ ZMServerKillcountHandler.loadKillCounts = function()
     end
 
     ZMServerKillcountHandler.killCounts = counts
-    print("ZonaMerah: Loaded kill counts from " .. ZMServerKillcountHandler.iniFilePath)
+    print("ZonaMerah: Loaded general kill counts from " .. ZMServerKillcountHandler.generalKillCountsPath)
 end
 
--- Update a player's kill count
-ZMServerKillcountHandler.updateKillCount = function(username, killCount)
-    if not username or not killCount then return end
+-- Load RavenCreek kill counts from .ini file
+ZMServerKillcountHandler.loadRavenCreekKillCounts = function()
+    local counts = {}
+    local file = getFileReader(ZMServerKillcountHandler.ravenCreekKillCountsPath, false)
 
-    ZMServerKillcountHandler.killCounts[username] = killCount
-    print("ZonaMerah: Updated kill count for " .. username .. " to " .. tostring(killCount))
+    if file then
+        local line = file:readLine()
+        local inRavenCreekSection = false
+
+        while line do
+            -- Check for section header
+            if line == "[RavenCreekKillCounts]" then
+                inRavenCreekSection = true
+            elseif line ~= "" and inRavenCreekSection then
+                -- Parse username=count line
+                local username, count = line:match("(.+)=(%d+)")
+                if username and count then
+                    counts[username] = tonumber(count)
+                end
+            end
+            line = file:readLine()
+        end
+        file:close()
+    end
+
+    ZMServerKillcountHandler.ravenCreekKillCounts = counts
+    print("ZonaMerah: Loaded RavenCreek kill counts from " .. ZMServerKillcountHandler.ravenCreekKillCountsPath)
+end
+
+-- Update a player's kill counts
+ZMServerKillcountHandler.updateKillCount = function(username, killCount, ravenCreekKillCount)
+    if not username then return end
+
+    local needsSave = false
+    local needsRavenCreekSave = false
+
+    if killCount then
+        ZMServerKillcountHandler.killCounts[username] = killCount
+        needsSave = true
+    end
+
+    if ravenCreekKillCount then
+        ZMServerKillcountHandler.ravenCreekKillCounts[username] = ravenCreekKillCount
+        needsRavenCreekSave = true
+    end
+
+    -- Only save the files that were updated
+    if needsSave then
+        ZMServerKillcountHandler.saveGeneralKillCounts()
+    end
+
+    if needsRavenCreekSave then
+        ZMServerKillcountHandler.saveRavenCreekKillCounts()
+    end
+
+    print("ZonaMerah: Updated kill counts for " .. username)
 end
 
 -- Handle client commands
 ZMServerKillcountHandler.onClientCommand = function(module, command, player, args)
     if module ~= "ZonaMerahCore" then return end
 
-    if command == "sendKillCount" and args and args.username and args.killCount then
-        ZMServerKillcountHandler.updateKillCount(args.username, args.killCount)
+    if command == "sendKillCount" and args and args.username then
+        ZMServerKillcountHandler.updateKillCount(args.username, args.killCount, args.ravenCreekKillCount)
     end
 end
 
 -- Save kill counts every hour
 ZMServerKillcountHandler.onEveryHours = function()
-    ZMServerKillcountHandler.saveKillCounts()
+    ZMServerKillcountHandler.saveGeneralKillCounts()
+    ZMServerKillcountHandler.saveRavenCreekKillCounts()
 end
 
 -- Initialize and register event handlers
