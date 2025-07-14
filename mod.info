@@ -1,6 +1,5 @@
-name=ZonaMerahCore
-id=ZonaMerahCore
+name=ZonaMerahCoreDev
+id=ZonaMerahCoreDev
 description=Core Mod for ZonaMerah Project Zomboid Server.
 poster=poster.png
 version=1.50
-/setaccesslevel DrunkenLee admin

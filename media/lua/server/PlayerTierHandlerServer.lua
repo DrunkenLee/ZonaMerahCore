@@ -12,15 +12,6 @@ function ServerPlayerTierHandler.setUnlimitedEnduranceAndTrait(player)
         if not player:HasTrait("Desensitized") then
             player:getTraits():add("Desensitized")
         end
-        player:setUnlimitedEndurance(true)
-    elseif tier == "Mythic" then
-        player:setUnlimitedEndurance(false)
-    elseif tier == "Immortal" then
-        player:setUnlimitedEndurance(false)
-    elseif tier == "Legend" then
-        player:setUnlimitedEndurance(false)
-    elseif tier == "Newbies" then
-        player:setUnlimitedEndurance(false)
     end
 end
 

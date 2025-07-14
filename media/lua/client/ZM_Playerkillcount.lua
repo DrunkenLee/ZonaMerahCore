@@ -101,30 +101,22 @@ ZMKillcountHandler.isInRavenCreek = function(x, y)
     return x >= minX and x <= maxX and y >= minY and y <= maxY
 end
 
--- Track zombie kills using weapon hits
-local function OnWeaponHit(wielder, weapon, zombie, damage)
-    -- Only process if all required objects exist and the zombie is actually a zombie
-    if not wielder or not zombie or not instanceof(zombie, "IsoZombie") then
-        return
-    end
+-- Function to handle all zombie deaths
+local function OnZombieDead(zombie)
+    if not zombie then return end
 
-    -- Only track player-caused hits
-    if not instanceof(wielder, "IsoPlayer") then
-        return
-    end
-
-    local zombieHealth = zombie:getHealth()
-
-    if zombieHealth <= 0 then
+    -- Try to get the attacker
+    local attacker = zombie:getAttackedBy()
+    if attacker and instanceof(attacker, "IsoPlayer") then
         -- Increment general kill count
-        ZMKillcountHandler.incrementKillCount(wielder)
+        ZMKillcountHandler.incrementKillCount(attacker)
 
         -- Check if the kill happened in RavenCreek
-        local zombieX = wielder:getX()
-        local zombieY = wielder:getY()
+        local zombieX = zombie:getX()
+        local zombieY = zombie:getY()
 
         if ZMKillcountHandler.isInRavenCreek(zombieX, zombieY) then
-            ZMKillcountHandler.incrementRavenCreekKillCount(wielder)
+            ZMKillcountHandler.incrementRavenCreekKillCount(attacker)
         end
     end
 end
@@ -157,8 +149,8 @@ ZMKillcountHandler.onCreatePlayer = function(playerIndex, player)
     ZMKillcountHandler.initKillCount(player)
 end
 
--- -- Register the event hooks
-Events.OnWeaponHitXp.Add(OnWeaponHit)
+-- Register the event hooks
+Events.OnZombieDead.Add(OnZombieDead) -- Using this instead of OnWeaponHit
 Events.OnCreatePlayer.Add(ZMKillcountHandler.onCreatePlayer)
 Events.OnGameStart.Add(function()
     local player = getSpecificPlayer(0)

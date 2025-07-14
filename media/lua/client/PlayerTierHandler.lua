@@ -24,6 +24,70 @@ function PlayerTierHandler.updatePlayerStats(player, hours, kills)
   end
 end
 
+function PlayerTierHandler.getPlayerEquippedGloves(player)
+    if not player then return nil end
+
+    local inventory = player:getInventory()
+
+    local equipItems = inventory:getItems()
+    for i = 0, equipItems:size() - 1 do
+        local item = equipItems:get(i)
+        if item:isEquipped() and item:getBodyLocation() == "Hands" then
+            return item
+        end
+    end
+    player:Say("You have no equipped gloves.")
+    return nil
+end
+
+function PlayerTierHandler.improveGloves(player)
+    if not player then return end
+
+    local tier = PlayerTierHandler.getPlayerTier(player)
+    local gloves = PlayerTierHandler.getPlayerEquippedGloves(player)
+
+    if not gloves then
+        player:Say("You don't have gloves equipped!")
+        return
+    end
+
+    local scratchDef = gloves:getScratchDefense()
+    local biteDef = gloves:getBiteDefense()
+    local bulletDef = gloves:getBulletDefense()
+    local combatSpeedMod = gloves:getCombatSpeedModifier()
+
+    local RandomCombatSpeedMod = ZombRand(10)
+    local RandomBonus =  ZombRand(10, 20)
+    print ("Random Bonus: " .. RandomBonus)
+    print ("Random Combat Speed Modifier: " .. RandomCombatSpeedMod)
+
+    gloves:setCombatSpeedModifier(RandomCombatSpeedMod)
+    gloves:setScratchDefense(RandomBonus)
+    gloves:setBiteDefense(RandomBonus)
+    gloves:setBulletDefense(RandomBonus)
+
+    player:Say("Your gloves have been enhanced!")
+end
+
+function PlayerTierHandler.getPlayerEquippedBackpack(player)
+    if not player then return nil end
+
+    -- Get the player's inventory
+    local inventory = player:getInventory()
+
+
+    local equipItems = inventory:getItems()
+    for i = 0, equipItems:size() - 1 do
+        local item = equipItems:get(i)
+        if item:isEquipped() and item:getCategory() == "Container" then
+            print(item)
+            return item
+        end
+    end
+    player:Say("You have no equipped backpack.")
+    return nil -- No backpack found
+end
+
 function PlayerTierHandler.recordPlayerTier(player)
   if not player then return nil end
 
@@ -183,11 +247,20 @@ function PlayerTierHandler.addAdminMenu(playerIndex, context)
 end
 
 function PlayerTierHandler.updateTierAndGiveXPBoost(player)
+  if not player then return end
+
   PlayerTierHandler.updatePlayerTier(player)
   PlayerTierHandler.giveXPBoost(player)
-  -- Send command to server to set unlimited endurance and trait if needed
+
+  local tier = PlayerTierHandler.getPlayerTier(player)
+
+  if tier == "Godlike" then
+    player:setUnlimitedEndurance(true)
+    player:Say("You are already at the highest tier: " .. tier)
+  end
+
   sendClientCommand("PlayerTierHandler", "setUnlimitedEnduranceAndTrait", { username = player:getUsername() })
-  -- player:Say("Your tier has been updated and boost applied.")
+  player:Say("DEBUG: FORCE UPDATE TIER!")
 end
 
 -- Function to add "Check My Tier" option to the player's context menu
