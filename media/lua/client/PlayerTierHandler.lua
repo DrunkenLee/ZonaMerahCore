@@ -57,11 +57,9 @@ function PlayerTierHandler.improveGloves(player)
     local combatSpeedMod = gloves:getCombatSpeedModifier()
 
     local RandomCombatSpeedMod = ZombRand(10)
-    local RandomBonus =  ZombRand(10, 20)
+    local RandomBonus =  ZombRand(10, 30)
     print ("Random Bonus: " .. RandomBonus)
-    print ("Random Combat Speed Modifier: " .. RandomCombatSpeedMod)
 
-    gloves:setCombatSpeedModifier(RandomCombatSpeedMod)
     gloves:setScratchDefense(RandomBonus)
     gloves:setBiteDefense(RandomBonus)
     gloves:setBulletDefense(RandomBonus)
@@ -132,14 +130,14 @@ end
 
 -- Function to assign tier based on the PlayerConfig file
 function PlayerTierHandler.assignPlayerTier(player)
-    local modData = player:getModData()
+    local modData = player:getModData() or {}
     local username = player:getUsername()
 
     -- Assign tier from PlayerConfig or default to Tier 1
-    local tier = PlayerConfig[username] or availableTiers[1]
-    local tierValue = 1
-    modData.PlayerTier = tier
-    modData.PlayerTierValue = tierValue
+    -- local tier = PlayerConfig[username] or availableTiers[1]
+    -- local tierValue = 1
+    -- modData.PlayerTier = tier
+    -- modData.PlayerTierValue = tierValue
 end
 
 -- Function to assign a tier to a player dynamically
@@ -268,7 +266,6 @@ function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
   local player = getSpecificPlayer(playerIndex)
   if not player then return end
 
-
     -- Check if player has title level >= 1
   local playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
   if not playerTitle or playerTitle < 1 then
@@ -279,42 +276,59 @@ function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
     context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
     context:addOption("VIP: (DANGER!) Update My Tier To Minimum VIP Min Tier", player, PlayerTierHandler.loadTierFromServer, player)
   end
+
+  -- Add book bonus testing options
+  context:addOption("Check Active Boost", player, PlayerTierHandler.checkActiveBookBonuses)
+
+  -- Add admin-only options
+  if player:isAccessLevel("admin") then
+    context:addOption("Admin: Test Book Bonus (Mechanics)", player, function() PlayerTierHandler.testBookBonus("Mechanics") end)
+  end
 end
 
 function PlayerTierHandler.giveXPBoost(player)
+  if not player then return end
+
   local tier = PlayerTierHandler.getPlayerTier(player)
-  local tierValue = player:getModData().PlayerTierValue
+  local tierValue = player:getModData().PlayerTierValue or 1
   local bonusMultiplier = 0
+  local xpMultiplier = 1.0
   local message = ""
 
+  -- Define tier-based XP multipliers
   if tier == "Newbies" then
-      bonusMultiplier = 1.01 -- No boost (0%)
-      message = "No Bonus Applied"
+      bonusMultiplier = 1.01 -- 1% speed boost
+      xpMultiplier = 1.1 -- 10% XP boost
+      message = "Newbie Bonus Applied (+1% Speed, +10% XP)"
   elseif tier == "Adventurer" then
-      bonusMultiplier = 1.04 -- 4% boost
-      message = "Adventurer Bonus Applied (+4%)"
+      bonusMultiplier = 1.04 -- 4% speed boost
+      xpMultiplier = 1.15 -- 15% XP boost
+      message = "Adventurer Bonus Applied (+4% Speed, +15% XP)"
   elseif tier == "Veteran" then
-      bonusMultiplier = 1.09 -- 9% boost
-      message = "Veteran Bonus Applied (+9%)"
+      bonusMultiplier = 1.09 -- 9% speed boost
+      xpMultiplier = 1.25 -- 25% XP boost
+      message = "Veteran Bonus Applied (+9% Speed, +25% XP)"
   elseif tier == "Champion" then
-      bonusMultiplier = 1.13 -- 13% boost
-      message = "Champion Bonus Applied (+13%)"
+      bonusMultiplier = 1.13 -- 13% speed boost
+      xpMultiplier = 1.35 -- 35% XP boost
+      message = "Champion Bonus Applied (+13% Speed, +35% XP)"
   elseif tier == "Legend" then
-      bonusMultiplier = 1.17 -- 17% boost
-      message = "Legend Bonus Applied (+17%)"
+      bonusMultiplier = 1.17 -- 17% speed boost
+      xpMultiplier = 1.45 -- 45% XP boost
+      message = "Legend Bonus Applied (+17% Speed, +45% XP)"
   elseif tier == "Immortal" then
-      bonusMultiplier = 1.21 -- 21% boost
-      message = "Immortal Bonus Applied (+21%)"
+      bonusMultiplier = 1.21 -- 21% speed boost
+      xpMultiplier = 1.55 -- 55% XP boost
+      message = "Immortal Bonus Applied (+21% Speed, +55% XP)"
   elseif tier == "Mythic" then
-      bonusMultiplier = 1.26 -- 26% boost
-      message = "Mythic Bonus Applied (+26%)"
+      bonusMultiplier = 1.26 -- 26% speed boost
+      xpMultiplier = 1.65 -- 65% XP boost
+      message = "Mythic Bonus Applied (+26% Speed, +65% XP)"
   elseif tier == "Godlike" then
-      bonusMultiplier = 1.3 -- 30% boost
-      message = "Godlike Bonus Applied (+30%)"
+      bonusMultiplier = 1.3 -- 30% speed boost
+      xpMultiplier = 1.75 -- 75% XP boost
+      message = "Godlike Bonus Applied (+30% Speed, +75% XP)"
   end
-
-  -- SpeedFramework.SetPlayerSpeed(player, bonusMultiplier)
-  -- player:Say(message)
 end
 
 function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
@@ -393,26 +407,32 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
   if (survivalDays > 15 and zombieKills >= 500) then
       newTier = "Veteran"
       newTierValue = 3
+      CharacterManager.instance:addFlag("veteranTier")
   end
   if (survivalDays > 20 and zombieKills >= 2000) then
       newTier = "Champion"
       newTierValue = 4
+      CharacterManager.instance:addFlag("championTier")
   end
   if (survivalDays > 30 and zombieKills >= 4000) then
       newTier = "Legend"
       newTierValue = 5
+      CharacterManager.instance:addFlag("legendTier")
   end
   if (survivalDays > 36 and zombieKills >= 8000) then
       newTier = "Immortal"
       newTierValue = 6
+      CharacterManager.instance:addFlag("immortalTier")
   end
   if (survivalDays > 61 and zombieKills >= 10000) then
       newTier = "Mythic"
       newTierValue = 7
+      CharacterManager.instance:addFlag("mythicTier")
   end
   if (survivalDays > 91 and zombieKills >= 12000) then
       newTier = "Godlike"
       newTierValue = 8
+      CharacterManager.instance:addFlag("godlikeTier")
   end
 
   -- We still check minimum tier requirements as a safety measure
@@ -448,6 +468,90 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
   end
 
   return false -- Return false if no update occurred
+end
+
+function PlayerTierHandler.giveBookXPBoost(player, skillName)
+    if not player then
+        print("Error: Player is nil")
+        return false
+    end
+
+    local skillToBook = {
+        ["Mechanics"] = { perk = Perks.Mechanics, maxMultiplier = 3 },
+        ["Electronics"] = { perk = Perks.Electrical, maxMultiplier = 3 },
+        ["Carpentry"] = { perk = Perks.Woodwork, maxMultiplier = 3 },
+        ["Cooking"] = { perk = Perks.Cooking, maxMultiplier = 3 },
+        ["Farming"] = { perk = Perks.Farming, maxMultiplier = 3 },
+        ["FirstAid"] = { perk = Perks.Doctor, maxMultiplier = 3 },
+        ["Tailoring"] = { perk = Perks.Tailoring, maxMultiplier = 3 },
+        ["MetalWelding"] = { perk = Perks.MetalWelding, maxMultiplier = 3 },
+        ["Blacksmith"] = { perk = Perks.Blacksmith, maxMultiplier = 3 },
+        ["Foraging"] = { perk = Perks.PlantScavenging, maxMultiplier = 3 }
+    }
+
+    local bookData = skillToBook[skillName]
+    if not bookData then
+        print("Error: Unknown skill name. Available skills: Mechanics, Electronics, Carpentry, Cooking, Farming, FirstAid, Tailoring, MetalWelding, Blacksmith, Foraging")
+        return false
+    end
+
+    local currentLevel = player:getPerkLevel(bookData.perk)
+
+    local bookLevel = 1
+    if currentLevel >= 8 then
+        bookLevel = 9
+    elseif currentLevel >= 6 then
+        bookLevel = 7
+    elseif currentLevel >= 4 then
+        bookLevel = 5
+    elseif currentLevel >= 2 then
+        bookLevel = 3
+    end
+
+    local multiplier = bookData.maxMultiplier
+    local maxLevel = bookLevel + 2
+
+    player:getXp():addXpMultiplier(bookData.perk, multiplier, bookLevel, maxLevel)
+
+    local tier = PlayerTierHandler.getPlayerTier(player)
+    local tierMultiplier = 1.0
+
+    if tier == "Newbies" then
+        tierMultiplier = 1.1
+    elseif tier == "Adventurer" then
+        tierMultiplier = 1.15
+    elseif tier == "Veteran" then
+        tierMultiplier = 1.25
+    elseif tier == "Champion" then
+        tierMultiplier = 1.35
+    elseif tier == "Legend" then
+        tierMultiplier = 1.45
+    elseif tier == "Immortal" then
+        tierMultiplier = 1.55
+    elseif tier == "Mythic" then
+        tierMultiplier = 1.65
+    elseif tier == "Godlike" then
+        tierMultiplier = 1.75
+    end
+
+    if tierMultiplier > 1.0 then
+        local bonusXP = (tierMultiplier - 1.0) * 100
+        player:getXp():AddXP(bookData.perk, bonusXP)
+    end
+
+    player:Say("Book XP boost applied for " .. skillName .. "! (Level " .. bookLevel .. " book, Tier: " .. tier .. ")")
+    print("Applied " .. skillName .. " book boost to " .. player:getUsername() .. " (Multiplier: " .. multiplier .. ", Tier bonus: " .. tierMultiplier .. ")")
+
+    return true
+end
+
+function PlayerTierHandler.consoleGiveBookBoost(skillName)
+    local player = getPlayer()
+    if not player then
+        print("Error: No player found")
+        return
+    end
+    return PlayerTierHandler.giveBookXPBoost(player, skillName)
 end
 
 function PlayerTierHandler.debugSetSurvivalTime(player, hours)
@@ -751,8 +855,77 @@ end)
 Events.OnFillWorldObjectContextMenu.Add(PlayerTierHandler.addAdminMenu)
 Events.OnFillWorldObjectContextMenu.Add(PlayerTierHandler.addPlayerTierMenu)
 
-Events.OnCreatePlayer.Add(function(playerIndex, player)
-    PlayerTierHandler.assignPlayerTier(player)
-end)
+Events.OnCreatePlayer.Add(
+    PlayerTierHandler.updateTierAndGiveXPBoost(getPlayer())
+)
+
+-- Function to test book XP bonus (for console use)
+function PlayerTierHandler.testBookBonus(skillName)
+  local player = getPlayer()
+  if not player then
+    print("No player found")
+    return
+  end
+
+  return PlayerTierHandler.giveBookXPBoost(player, skillName or "Mechanics")
+end
+
+-- Function to check active book bonuses
+function PlayerTierHandler.checkActiveBookBonuses()
+  local player = getPlayer()
+  if not player then
+    print("No player found")
+    return
+  end
+
+  local modData = player:getModData()
+  if not modData.BookBonuses then
+    player:Say("No active book bonuses")
+    return
+  end
+
+  local currentTime = getGameTime():getWorldAgeHours() * 60
+  local count = 0
+
+  for perkStr, bonus in pairs(modData.BookBonuses) do
+    if bonus.expiry and currentTime <= bonus.expiry then
+      local timeLeft = math.floor((bonus.expiry - currentTime) / 60)
+      player:Say("Active: " .. bonus.bookName .. " (+" .. math.floor((bonus.multiplier - 1) * 100) .. "% XP, " .. timeLeft .. "h left)")
+      count = count + 1
+    end
+  end
+
+  if count == 0 then
+    player:Say("No active book bonuses")
+  end
+end
+
+-- Function to spawn Bir Pletok for testing (admin only)
+function PlayerTierHandler.spawnBirPletok(quantity)
+  local player = getPlayer()
+  if not player then
+    print("No player found")
+    return
+  end
+
+  if not player:isAccessLevel("admin") then
+    player:Say("Only admins can spawn items")
+    return
+  end
+
+  local amount = quantity or 1
+  for i = 1, amount do
+    local item = player:getInventory():AddItem("ZonaMerahCore.BirPletok")
+    if item then
+      print("Successfully spawned Bir Pletok: " .. item:getFullType())
+    else
+      print("Failed to spawn Bir Pletok - item may not be defined correctly")
+      player:Say("Failed to spawn Bir Pletok - check console for errors")
+    end
+  end
+
+  player:Say("Attempted to spawn " .. amount .. " Bir Pletok")
+end
+
 
 return PlayerTierHandler

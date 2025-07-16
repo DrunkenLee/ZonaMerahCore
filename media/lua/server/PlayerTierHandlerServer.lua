@@ -57,10 +57,7 @@ end
 -- Function to load the player's tier data from a file
 function ServerPlayerTierHandler.loadPlayerSurvivedHours(player, args)
   if not player then return end
-
-  -- Use the username from args if provided, otherwise use the player's username
   local username = args and args.username or player:getUsername()
-
   local filePath = "server-player-tier.ini"
   local file = getFileReader(filePath, true)
   if not file then
@@ -90,7 +87,6 @@ function ServerPlayerTierHandler.loadPlayerSurvivedHours(player, args)
   return userData.hours, userData.kills
 end
 
--- Function to save the player's Exo Operator Level to a file
 function ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
   if not player then return end
   local username = player:getUsername()
@@ -153,7 +149,6 @@ function ServerPlayerTierHandler.savePlayerExoOperatorLevel(player, args)
   end
 end
 
--- Function to load the player's Exo Operator Level from a file
 function ServerPlayerTierHandler.loadPlayerExoOperatorLevel(player)
   if not player then return end
   local username = player:getUsername()
@@ -282,7 +277,7 @@ function ServerPlayerTierHandler.setPlayerTier(admin, args)
         " set " .. targetUsername .. "'s tier to " .. tier)
 end
 
--- Update the OnClientCommand handler to process exo operator level commands
+
 Events.OnClientCommand.Add(function(module, command, player, args)
   if module == "PlayerTierHandler" then
       if command == "saveSurvivedHours" then
@@ -308,8 +303,6 @@ Events.OnClientCommand.Add(function(module, command, player, args)
       end
   end
 end)
-
-
 
 Events.EveryDays.Add(function()
     for i = 0, getNumActivePlayers() - 1 do
