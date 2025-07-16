@@ -535,13 +535,12 @@ function PlayerTierHandler.giveBookXPBoost(player, skillName)
     end
 
     if tierMultiplier > 1.0 then
-        local bonusXP = (tierMultiplier - 1.0) * 100
+        local bonusXP = (tierMultiplier - 1.0) * 10
         player:getXp():AddXP(bookData.perk, bonusXP)
     end
 
     player:Say("Book XP boost applied for " .. skillName .. "! (Level " .. bookLevel .. " book, Tier: " .. tier .. ")")
     print("Applied " .. skillName .. " book boost to " .. player:getUsername() .. " (Multiplier: " .. multiplier .. ", Tier bonus: " .. tierMultiplier .. ")")
-
     return true
 end
 
