@@ -27,11 +27,83 @@ ZMServerwideFlagHandler.init = function()
     ZMServerwideFlagHandler.broadcastAllFlags()
 end
 
+-- Load flags from .ini file
+ZMServerwideFlagHandler.loadFlags = function()
+    local flags = {}
+    print("ZonaMerah: Attempting to load flags from " .. ZMServerwideFlagHandler.flagsFilePath)
+    local file = getFileReader(ZMServerwideFlagHandler.flagsFilePath, true)
+
+    if file then
+        print("ZonaMerah: Successfully opened flag file")
+        local line = file:readLine()
+        local inServerFlagsSection = false
+
+        while line do
+            -- Trim whitespace
+            line = line:gsub("^%s*(.-)%s*$", "%1")
+
+            -- Skip empty lines and comments
+            if line ~= "" and not line:match("^;") then
+                -- Check for section headers
+                local sectionName = line:match("^%[(.+)%]$")
+                if sectionName then
+                    print("ZonaMerah DEBUG: Found section: " .. sectionName)
+                    inServerFlagsSection = (sectionName == "ServerFlags")
+                elseif inServerFlagsSection then
+                    -- Parse key=value pairs
+                    local flagName, value = line:match("^([^=]+)=(.*)$")
+                    if flagName and value then
+                        flagName = flagName:gsub("^%s*(.-)%s*$", "%1")
+                        value = value:gsub("^%s*(.-)%s*$", "%1")
+
+                        -- Convert value to appropriate type
+                        if value == "true" then
+                            value = true
+                        elseif value == "false" then
+                            value = false
+                        elseif tonumber(value) ~= nil then
+                            value = tonumber(value)
+                        end
+
+                        flags[flagName] = value
+                        print("ZonaMerah DEBUG: Loaded flag " .. flagName .. " = " .. tostring(value) ..
+                              " (type: " .. type(value) .. ")")
+                    end
+                end
+            end
+            line = file:readLine()
+        end
+        file:close()
+    else
+        print("ZonaMerah WARNING: Could not open flag file at " .. ZMServerwideFlagHandler.flagsFilePath)
+        print("ZonaMerah: Using default flags")
+        flags = ZMServerwideFlagHandler.defaultFlags
+    end
+
+    -- Ensure all default flags exist
+    for flagName, defaultValue in pairs(ZMServerwideFlagHandler.defaultFlags) do
+        if flags[flagName] == nil then
+            flags[flagName] = defaultValue
+            print("ZonaMerah DEBUG: Using default value for " .. flagName .. " = " .. tostring(defaultValue))
+        end
+    end
+
+    ZMServerwideFlagHandler.flags = flags
+
+    -- Print all loaded flags
+    print("ZonaMerah: All loaded flags:")
+    for name, value in pairs(ZMServerwideFlagHandler.flags) do
+        print("  " .. name .. " = " .. tostring(value) .. " (type: " .. type(value) .. ")")
+    end
+
+    return flags
+end
+
 -- Save flags to .ini file
 ZMServerwideFlagHandler.saveFlags = function()
-    local file = getFileWriter(ZMServerwideFlagHandler.flagsFilePath, false, false)
+    local file = getFileWriter(ZMServerwideFlagHandler.flagsFilePath, true, false)  -- Added 'true' parameter
     if not file then
-        print("ERROR: ZonaMerah: Failed to open serverwide flags file for writing")
+        print("ZonaMerah: ERROR - Could not open flag file for writing: " .. ZMServerwideFlagHandler.flagsFilePath)
         return false
     end
 
@@ -40,13 +112,7 @@ ZMServerwideFlagHandler.saveFlags = function()
 
     -- Write each flag
     for flagName, value in pairs(ZMServerwideFlagHandler.flags) do
-        if type(value) == "string" then
-            -- Escape quotes and wrap in quotes for strings
-            local escapedValue = string.gsub(tostring(value), '"', '\\"')
-            file:write(flagName .. '="' .. escapedValue .. '"\n')
-        else
-            file:write(flagName .. "=" .. tostring(value) .. "\n")
-        end
+        file:write(flagName .. "=" .. tostring(value) .. "\n")
     end
 
     file:close()
@@ -54,83 +120,31 @@ ZMServerwideFlagHandler.saveFlags = function()
     return true
 end
 
--- Load flags from .ini file
-ZMServerwideFlagHandler.loadFlags = function()
-    local flags = {}
-    local file = getFileReader(ZMServerwideFlagHandler.flagsFilePath, false)
-
-    if file then
-        local line = file:readLine()
-        local inFlagsSection = false
-
-        while line do
-            -- Check for section header
-            if line == "[ServerFlags]" then
-                inFlagsSection = true
-            elseif line ~= "" and inFlagsSection and not line:match("^%s*;") then -- Skip comments
-                -- Parse flagName=value line (support both quoted strings and numbers)
-                local flagName, quotedValue = line:match('(.+)="(.*)"')
-                if flagName and quotedValue then
-                    -- String value (quoted)
-                    local unescapedValue = string.gsub(quotedValue, '\\"', '"')
-                    flags[flagName] = unescapedValue
-                else
-                    -- Try numeric value
-                    local flagName2, numValue = line:match("(.+)=(%d+)")
-                    if flagName2 and numValue then
-                        flags[flagName2] = tonumber(numValue)
-                    else
-                        -- Try boolean or other unquoted string
-                        local flagName3, anyValue = line:match("(.+)=(.*)")
-                        if flagName3 and anyValue then
-                            -- Try to convert to number first, then keep as string
-                            local numVal = tonumber(anyValue)
-                            if numVal then
-                                flags[flagName3] = numVal
-                            else
-                                flags[flagName3] = anyValue
-                            end
-                        end
-                    end
-                end
-            end
-            line = file:readLine()
-        end
-        file:close()
-        print("ZonaMerah: Loaded serverwide flags from " .. ZMServerwideFlagHandler.flagsFilePath)
-    else
-        print("ZonaMerah: Serverwide flags file not found, creating with defaults")
-        flags = ZMServerwideFlagHandler.defaultFlags
-    end
-
-    -- Ensure all default flags exist
-    for flagName, defaultValue in pairs(ZMServerwideFlagHandler.defaultFlags) do
-        if flags[flagName] == nil then
-            flags[flagName] = defaultValue
-            print("ZonaMerah: Added missing flag: " .. flagName .. " = " .. defaultValue)
-        end
-    end
-
-    ZMServerwideFlagHandler.flags = flags
-
-    -- Save to ensure file exists with all flags
-    ZMServerwideFlagHandler.saveFlags()
-end
-
--- Get a flag value
+-- Get a flag value with auto-reload
 ZMServerwideFlagHandler.getFlag = function(flagName)
-    return ZMServerwideFlagHandler.flags[flagName]
+    -- Reload flags from file every time to ensure fresh values
+    ZMServerwideFlagHandler.loadFlags()
+
+    local value = ZMServerwideFlagHandler.flags[flagName]
+    print("ZonaMerah DEBUG: Getting flag " .. flagName .. ", value = " .. tostring(value) ..
+          " (type: " .. type(value) .. ")")
+
+    return value
 end
 
--- Set a flag value
+-- Set a flag value with auto-reload
 ZMServerwideFlagHandler.setFlag = function(flagName, value, saveImmediately)
     if not flagName then return false end
+
+    -- Reload flags first to ensure we have the latest values
+    ZMServerwideFlagHandler.loadFlags()
 
     -- Keep the original value type instead of converting to boolean
     local oldValue = ZMServerwideFlagHandler.flags[flagName]
     ZMServerwideFlagHandler.flags[flagName] = value
 
-    print("ZonaMerah: Set flag " .. flagName .. " = " .. tostring(value) .. " (type: " .. type(value) .. ") (was " .. tostring(oldValue) .. ")")
+    print("ZonaMerah: Set flag " .. flagName .. " = " .. tostring(value) ..
+          " (type: " .. type(value) .. ") (was " .. tostring(oldValue) .. ")")
 
     if saveImmediately ~= false then
         ZMServerwideFlagHandler.saveFlags()
@@ -238,6 +252,7 @@ ZMServerwideFlagHandler.broadcastAllFlags = function(specificPlayer)
 end
 
 -- Handle client commands
+local originalOnClientCommand = ZMServerwideFlagHandler.onClientCommand
 ZMServerwideFlagHandler.onClientCommand = function(module, command, player, args)
     if module ~= "ZMServerwideFlagHandler" then return end
 
@@ -253,6 +268,20 @@ ZMServerwideFlagHandler.onClientCommand = function(module, command, player, args
             flagName = args.flagName,
             value = value
         })
+    elseif command == "getFlagDirect" and args and args.flagName and args.requestId then
+        local value = ZMServerwideFlagHandler.getFlag(args.flagName)
+
+        print(fileExists("Lua/ZonaMerah_ServerFlags.ini"))
+        print(fileExists("ZonaMerah_KillCounts.ini"))
+        print("Direct flag request for " .. args.flagName .. ": " .. tostring(value))
+        sendServerCommand(player, "ZMServerwideFlagHandler", "flagDirectResponse", {
+            flagName = args.flagName,
+            value = value,
+            requestId = args.requestId
+        })
+    else
+        -- Call original handler for other commands
+        originalOnClientCommand(module, command, player, args)
     end
 end
 

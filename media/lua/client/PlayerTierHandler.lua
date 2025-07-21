@@ -407,32 +407,32 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
   if (survivalDays > 15 and zombieKills >= 500) then
       newTier = "Veteran"
       newTierValue = 3
-      CharacterManager.instance:addFlag("veteranTier")
+      -- CharacterManager.instance:addFlag("veteranTier")
   end
   if (survivalDays > 20 and zombieKills >= 2000) then
       newTier = "Champion"
       newTierValue = 4
-      CharacterManager.instance:addFlag("championTier")
+      -- CharacterManager.instance:addFlag("championTier")
   end
   if (survivalDays > 30 and zombieKills >= 4000) then
       newTier = "Legend"
       newTierValue = 5
-      CharacterManager.instance:addFlag("legendTier")
+      -- CharacterManager.instance:addFlag("legendTier")
   end
   if (survivalDays > 36 and zombieKills >= 8000) then
       newTier = "Immortal"
       newTierValue = 6
-      CharacterManager.instance:addFlag("immortalTier")
+      -- CharacterManager.instance:addFlag("immortalTier")
   end
   if (survivalDays > 61 and zombieKills >= 10000) then
       newTier = "Mythic"
       newTierValue = 7
-      CharacterManager.instance:addFlag("mythicTier")
+      -- CharacterManager.instance:addFlag("mythicTier")
   end
   if (survivalDays > 91 and zombieKills >= 12000) then
       newTier = "Godlike"
       newTierValue = 8
-      CharacterManager.instance:addFlag("godlikeTier")
+      -- CharacterManager.instance:addFlag("godlikeTier")
   end
 
   -- We still check minimum tier requirements as a safety measure

@@ -104,6 +104,51 @@ ZMServerwideFlagHandler.requestFlag = function(flagName)
     })
 end
 
+-- Add these properties to track pending callbacks
+ZMServerwideFlagHandler.pendingCallbacks = {}
+ZMServerwideFlagHandler.requestId = 0
+
+-- Direct on-demand flag request (no caching)
+ZMServerwideFlagHandler.requestFlagDirect = function(flagName, callback)
+    -- Generate unique request ID
+    ZMServerwideFlagHandler.requestId = ZMServerwideFlagHandler.requestId + 1
+    local requestId = ZMServerwideFlagHandler.requestId
+
+    -- Store callback with request ID
+    ZMServerwideFlagHandler.pendingCallbacks[requestId] = callback
+
+    -- Send request to server
+    sendClientCommand("ZMServerwideFlagHandler", "getFlagDirect", {
+        flagName = flagName,
+        requestId = requestId
+    })
+end
+
+-- On-demand boolean flag request (no caching)
+ZMServerwideFlagHandler.getFlagBoolDirect = function(flagName, callback)
+    print("ZonaMerah DEBUG: Requesting flag directly: " .. flagName)
+    ZMServerwideFlagHandler.requestFlagDirect(flagName, function(value)
+        local result = false
+        print("ZonaMerah DEBUG: Raw value received for " .. flagName .. ": " .. tostring(value) ..
+              " (type: " .. type(value) .. ")")
+
+        if type(value) == "number" then
+            result = value == 1
+            print("ZonaMerah DEBUG: Number value " .. value .. " converted to boolean: " .. tostring(result))
+        elseif type(value) == "string" then
+            result = string.lower(value) == "true" or value == "1"
+            print("ZonaMerah DEBUG: String value '" .. value .. "' converted to boolean: " .. tostring(result))
+        elseif type(value) == "boolean" then
+            result = value
+            print("ZonaMerah DEBUG: Boolean value passed through: " .. tostring(result))
+        else
+            print("ZonaMerah DEBUG: Unknown value type, defaulting to false")
+        end
+
+        callback(result)
+    end)
+end
+
 -- Handle server commands
 ZMServerwideFlagHandler.onServerCommand = function(module, command, args)
     if module ~= "ZMServerwideFlagHandler" then return end
@@ -134,6 +179,13 @@ ZMServerwideFlagHandler.onServerCommand = function(module, command, args)
         if player and args.message then
             player:Say("Error: " .. args.message)
         end
+    elseif command == "flagDirectResponse" and args and args.requestId and args.flagName then
+        local callback = ZMServerwideFlagHandler.pendingCallbacks[args.requestId]
+        if callback then
+            -- Execute callback with value and remove from pending list
+            callback(args.value)
+            ZMServerwideFlagHandler.pendingCallbacks[args.requestId] = nil
+        end
     end
 end
 
@@ -162,6 +214,19 @@ ZMServerwideFlagHandler.consoleListFlags = function()
         print(flagName .. " = " .. tostring(value) .. " (type: " .. type(value) .. ")")
     end
     print("====================================")
+end
+
+-- Console function for direct flag requests
+ZMServerwideFlagHandler.consoleRequestFlagDirect = function(flagName)
+    if not flagName then
+        print("Usage: ZMServerwideFlagHandler.consoleRequestFlagDirect('flagName')")
+        return
+    end
+
+    print("ZonaMerah: Requesting flag '" .. flagName .. "' directly from server...")
+    ZMServerwideFlagHandler.getFlagBoolDirect(flagName, function(result)
+        print("ZonaMerah RESULT: Flag '" .. flagName .. "' = " .. tostring(result))
+    end)
 end
 
 -- Auto-request flags when player connects
