@@ -159,4 +159,4 @@ end
 -- Initialize and register event handlers
 Events.OnServerStarted.Add(ZMServerKillcountHandler.init)
 Events.OnClientCommand.Add(ZMServerKillcountHandler.onClientCommand)
-Events.EveryHours.Add(ZMServerKillcountHandler.onEveryHours)
+-- Events.EveryHours.Add(ZMServerKillcountHandler.onEveryHours)

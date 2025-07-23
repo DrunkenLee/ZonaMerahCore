@@ -150,31 +150,31 @@ ZMKillcountHandler.onCreatePlayer = function(playerIndex, player)
 end
 
 -- Register the event hooks
-Events.OnZombieDead.Add(OnZombieDead) -- Using this instead of OnWeaponHit
-Events.OnCreatePlayer.Add(ZMKillcountHandler.onCreatePlayer)
-Events.OnGameStart.Add(function()
-    local player = getSpecificPlayer(0)
-    if player then
-        ZMKillcountHandler.initKillCount(player)
-    end
+-- Events.OnZombieDead.Add(OnZombieDead) -- Using this instead of OnWeaponHit
+-- Events.OnCreatePlayer.Add(ZMKillcountHandler.onCreatePlayer)
+-- Events.OnGameStart.Add(function()
+--     local player = getSpecificPlayer(0)
+--     if player then
+--         ZMKillcountHandler.initKillCount(player)
+--     end
 
-    -- Initial send of kill count
-    ZMKillcountHandler.sendKillCountToServer()
-end)
+--     -- Initial send of kill count
+--     ZMKillcountHandler.sendKillCountToServer()
+-- end)
 
 -- Send kill count to server every hour
-Events.EveryHours.Add(ZMKillcountHandler.sendKillCountToServer)
+-- Events.EveryHours.Add(ZMKillcountHandler.sendKillCountToServer)
 
 
-Events.OnGameStart.Add(function()
-    local player = getSpecificPlayer(0)
-    if player then
-        Events.OnTick.Add(function()
-            local inventory = getPlayerInventory(0)
-            if inventory then
-                inventory.title = "Zona Merah Inventory"
-                Events.OnTick.Remove(this)
-            end
-        end)
-    end
-end)
+-- Events.OnGameStart.Add(function()
+--     local player = getSpecificPlayer(0)
+--     if player then
+--         Events.OnTick.Add(function()
+--             local inventory = getPlayerInventory(0)
+--             if inventory then
+--                 inventory.title = "Zona Merah Inventory"
+--                 Events.OnTick.Remove(this)
+--             end
+--         end)
+--     end
+-- end)

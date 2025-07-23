@@ -110,11 +110,8 @@ OnPreFillInventoryObjectContextMenu = function(_playerNum, _context, _items)
       end
   end
 
-  Events.OnTick.Add(function()
-      delayedFunc()
-      Events.OnTick.Remove(delayedFunc)
-  end)
+  -- Events.OnTick.Add(function()
+  --     delayedFunc()
+  --     Events.OnTick.Remove(delayedFunc)
+  -- end)
 end
-
-Events.OnFillWorldObjectContextMenu.Add(OnFillWorldObjectContextMenu)
-Events.OnPreFillInventoryObjectContextMenu.Add(OnPreFillInventoryObjectContextMenu)

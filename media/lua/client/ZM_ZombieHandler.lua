@@ -249,6 +249,6 @@ Events.OnServerCommand.Add(function(module, command, args)
 end)
 
 -- Hook into player context menu
-Events.OnFillInventoryObjectContextMenu.Add(ZM_ZombieHandler.addZombieSpawnMenu)
+-- Events.OnFillInventoryObjectContextMenu.Add(ZM_ZombieHandler.addZombieSpawnMenu)
 
 return ZM_ZombieHandler

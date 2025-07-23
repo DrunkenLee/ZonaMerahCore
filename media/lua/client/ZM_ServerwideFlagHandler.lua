@@ -149,6 +149,33 @@ ZMServerwideFlagHandler.getFlagBoolDirect = function(flagName, callback)
     end)
 end
 
+-- On-demand string flag request (no caching)
+ZMServerwideFlagHandler.getFlagStringDirect = function(flagName, defaultValue, callback)
+    -- If callback is not provided but defaultValue is a function, use it as callback
+    if type(defaultValue) == "function" and callback == nil then
+        callback = defaultValue
+        defaultValue = ""
+    end
+
+    print("ZonaMerah DEBUG: Requesting string flag directly: " .. flagName)
+    ZMServerwideFlagHandler.requestFlagDirect(flagName, function(value)
+        local result = defaultValue or ""
+
+        print("ZonaMerah DEBUG: Raw value received for " .. flagName .. ": " .. tostring(value) ..
+              " (type: " .. type(value) .. ")")
+
+        -- Convert any value to string if it exists
+        if value ~= nil then
+            result = tostring(value)
+            print("ZonaMerah DEBUG: Value converted to string: '" .. result .. "'")
+        else
+            print("ZonaMerah DEBUG: Value is nil, using default: '" .. result .. "'")
+        end
+
+        callback(result)
+    end)
+end
+
 -- Handle server commands
 ZMServerwideFlagHandler.onServerCommand = function(module, command, args)
     if module ~= "ZMServerwideFlagHandler" then return end
@@ -205,7 +232,10 @@ ZMServerwideFlagHandler.consoleSetFlag = function(flagName, value)
         print("Usage: ZMServerwideFlagHandler.consoleSetFlag('flagName', value)")
         return
     end
-    return ZMServerwideFlagHandler.setFlag(flagName, value)
+    sendClientCommand("ZMServerwideFlagHandler", "setFlag", {
+    flagName = flagName,
+    value = value
+    })
 end
 
 ZMServerwideFlagHandler.consoleListFlags = function()
@@ -226,6 +256,19 @@ ZMServerwideFlagHandler.consoleRequestFlagDirect = function(flagName)
     print("ZonaMerah: Requesting flag '" .. flagName .. "' directly from server...")
     ZMServerwideFlagHandler.getFlagBoolDirect(flagName, function(result)
         print("ZonaMerah RESULT: Flag '" .. flagName .. "' = " .. tostring(result))
+    end)
+end
+
+-- Console function for direct string flag requests
+ZMServerwideFlagHandler.consoleRequestFlagStringDirect = function(flagName, defaultValue)
+    if not flagName then
+        print("Usage: ZMServerwideFlagHandler.consoleRequestFlagStringDirect('flagName', 'defaultValue')")
+        return
+    end
+
+    print("ZonaMerah: Requesting string flag '" .. flagName .. "' directly from server...")
+    ZMServerwideFlagHandler.getFlagStringDirect(flagName, defaultValue or "", function(result)
+        print("ZonaMerah RESULT: Flag '" .. flagName .. "' = '" .. result .. "'")
     end)
 end
 

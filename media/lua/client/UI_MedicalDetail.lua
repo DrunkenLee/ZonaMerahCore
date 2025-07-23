@@ -540,4 +540,4 @@ if not _G.checkMedical then
 end
 
 
-Events.OnKeyPressed.Add(onCustomUIKeyPressed)
+-- Events.OnKeyPressed.Add(onCustomUIKeyPressed)
