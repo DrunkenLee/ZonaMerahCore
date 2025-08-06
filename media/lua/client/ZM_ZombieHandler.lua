@@ -77,6 +77,36 @@ ZM_ZombieHandler.ZombieTypes = {
     }
 }
 
+-- This is defined outside any function (global scope)
+local soundFunction = function()
+    -- Get the stored player reference and counter
+    local p = player
+
+    -- Check if function should run at all
+    if p:getModData().worldSoundCounter >= 10 then
+        return
+    end
+
+    if not p or not p:isAlive() then
+        Events.EveryOneMinute.Remove(soundFunction)
+        print("Player is not alive or not found, removing sound function")
+        return
+    end
+
+    -- Increment counter
+    p:getModData().worldSoundCounter = p:getModData().worldSoundCounter + 1
+
+    if p:getModData().worldSoundCounter % 2 == 0 then
+      -- p:Say("You hear a distant sound... (" .. p:getModData().worldSoundCounter .. ")")
+    end
+
+    -- Check if we've reached 10 times
+    if p:getModData().worldSoundCounter >= 10 then
+        -- print("Removing world sound event after 10 triggers")
+        Events.EveryOneMinute.Remove(soundFunction)
+    end
+end
+
 -- Function to spawn zombie at player location
 function ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, count)
     local player = getPlayer()
@@ -98,7 +128,7 @@ function ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, count)
         z = player:getZ()
     })
 
-    player:Say("Requesting " .. count .. " " .. zombieType .. " zombie(s)...")
+    -- player:Say("Requesting " .. count .. " " .. zombieType .. " zombie(s)...")
     return true
 end
 
@@ -123,7 +153,7 @@ function ZM_ZombieHandler.spawnZombieAtCoords(x, y, z, zombieType, count)
         z = z
     })
 
-    player:Say("Requesting " .. count .. " " .. zombieType .. " zombie(s) at coordinates...")
+    -- player:Say("Requesting " .. count .. " " .. zombieType .. " zombie(s) at coordinates...")
     return true
 end
 
@@ -158,7 +188,7 @@ function ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, 
     if isTargeted and targetUsername then
         message = message .. " targeting " .. targetUsername
     end
-    player:Say(message)
+    -- player:Say(message)
     return true
 end
 
@@ -237,12 +267,56 @@ Events.OnServerCommand.Add(function(module, command, args)
         if command == "zombieSpawned" then
             local player = getPlayer()
             if player and args.message then
-                player:Say(args.message)
+                -- player:Say(args.message)
+
+                -- Initialize tracking variables
+                local pulseCount = 0
+                local maxPulses = 5  -- 5 pulses over 5 minutes
+
+                -- Make initial sound immediately
+                MakeWorldSound(player, 120, 100)
+                -- player:Say("Zombies are being attracted to this area!")
+
+                -- Create a named function we can reference for removal
+                local soundPulser = nil
+                soundPulser = function()
+                    -- Safety check
+                    if not player or not player:isAlive() then
+                        Events.EveryOneMinute.Remove(soundPulser)
+                        print("Player not valid, stopping sound pulse")
+                        return
+                    end
+
+                    -- Increment pulse count
+                    pulseCount = pulseCount + 1
+
+                    -- Make sound
+                    MakeWorldSound(player, 120, 100)
+
+                    -- Debug info
+                    print("Sound pulse #" .. pulseCount .. " of " .. maxPulses)
+
+                    -- Player feedback
+                    if pulseCount < maxPulses then
+                        -- player:Say("More zombies are being attracted... (" .. pulseCount .. " of " .. maxPulses .. ")")
+                    end
+
+                    -- Check if we've reached the maximum
+                    if pulseCount >= maxPulses then
+                        Events.EveryOneMinute.Remove(soundPulser)
+                        -- player:Say("The attraction effect has ended")
+                        print("Sound pulse sequence complete - reached max pulses")
+                    end
+                end
+
+                -- Register with EveryOneMinute event
+                Events.EveryOneMinute.Add(soundPulser)
+                -- print("Started sound pulse sequence (every 1 minute for " .. maxPulses .. " minutes)")
             end
         elseif command == "spawnError" then
             local player = getPlayer()
             if player and args.error then
-                player:Say("Error: " .. args.error)
+                -- player:Say("Error: " .. args.error)
             end
         end
     end

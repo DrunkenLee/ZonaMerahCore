@@ -478,7 +478,7 @@ function PlayerTierHandler.giveBookXPBoost(player, skillName)
 
     local skillToBook = {
         ["Mechanics"] = { perk = Perks.Mechanics, maxMultiplier = 3 },
-        ["Electronics"] = { perk = Perks.Electrical, maxMultiplier = 3 },
+        ["Electricity"] = { perk = Perks.Electrical, maxMultiplier = 3 },
         ["Carpentry"] = { perk = Perks.Woodwork, maxMultiplier = 3 },
         ["Cooking"] = { perk = Perks.Cooking, maxMultiplier = 3 },
         ["Farming"] = { perk = Perks.Farming, maxMultiplier = 3 },
@@ -539,7 +539,7 @@ function PlayerTierHandler.giveBookXPBoost(player, skillName)
         player:getXp():AddXP(bookData.perk, bonusXP)
     end
 
-    player:Say("Book XP boost applied for " .. skillName .. "! (Level " .. bookLevel .. " book, Tier: " .. tier .. ")")
+    player:Say("XP bonus applied for " .. skillName .. "! (Level " .. bookLevel .. " book, Tier: " .. tier .. ")")
     print("Applied " .. skillName .. " book boost to " .. player:getUsername() .. " (Multiplier: " .. multiplier .. ", Tier bonus: " .. tierMultiplier .. ")")
     return true
 end

@@ -57,7 +57,7 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         profession = "Unemployed"
     },
     ["elite"] = {
-        health = 150,
+        health = 200,
         strength = 6,
         fitness = 4,
         walkType = "sprint1",
@@ -306,9 +306,16 @@ function ZM_ZombieHandlerServer.spawnHorde(player, args)
                 -- Set zombie target if targeting is enabled
                 if isTargeted and targetPlayer then
                     zombie:setTarget(targetPlayer)
-                    zombie:setTargetSeenTime(36000) -- Keep target for a very long time
+                    zombie:setTargetSeenTime(108000) -- Keep target for a very long time
                     zombie:setStaggerBack(false) -- Prevent stagger to maintain pursuit
+                    -- zombie:setLastTargetSeenX(targetPlayer:getX())
+                    -- zombie:setLastTargetSeenY(targetPlayer:getY())
+                    zombie:pathToCharacter(targetPlayer) -- Force pathfinding to target player
 
+                    zombie:setBecomeCrawler(false) -- Don't become crawler
+                    zombie:setFallOnFront(false) -- Don't fall forward
+                    zombie:setKnockedDown(false) -- Not knocked down
+                    -- zombie:setOnFloor(false)
                     -- Make zombies more focused on the target
                     if zombie:getStats() then
                         zombie:getStats():setAnger(1.0) -- Max anger
@@ -316,6 +323,10 @@ function ZM_ZombieHandlerServer.spawnHorde(player, args)
                     end
                 end
             end
+
+            sendServerCommand(player, "ZM_ZombieHandler", "zombieSpawned", {
+                message = "Spawned " .. currentZombieType .. " zombie at coordinates: (" .. x .. ", " .. y .. ", " .. (args.z or 0) .. ")"
+            })
         end
     end
 
