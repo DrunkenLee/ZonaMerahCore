@@ -3,7 +3,7 @@ ZM_ZombieHandlerServer = ZM_ZombieHandlerServer or {}
 -- Zombie type definitions (same as client)
 ZM_ZombieHandlerServer.ZombieTypes = {
     ["normal"] = {
-        health = 100,
+        health = 150,
         strength = 1,
         fitness = 1,
         walkType = "shamble",
@@ -48,7 +48,7 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         profession = "Police"
     },
     ["horde"] = {
-        health = 60,
+        health = 150,
         strength = 1,
         fitness = 2,
         walkType = "shamble",
@@ -156,6 +156,25 @@ function ZM_ZombieHandlerServer.createZombie(square, zombieType)
     return zombie
 end
 
+-- Add this function to check if any player is within the safe radius
+function ZM_ZombieHandlerServer.isPlayerNearby(x, y, z, radius)
+    if not radius or radius <= 0 then return false end
+
+    for i = 0, getOnlinePlayers():size() - 1 do
+        local player = getOnlinePlayers():get(i)
+        if player and not player:isDead() then
+            local px, py, pz = player:getX(), player:getY(), player:getZ()
+            if pz == z then
+                local dist = math.sqrt((px - x)^2 + (py - y)^2)
+                if dist <= radius then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
 -- Function to spawn zombie at player location
 function ZM_ZombieHandlerServer.spawnZombieAtPlayer(player, args)
     -- Add admin check
@@ -168,24 +187,48 @@ function ZM_ZombieHandlerServer.spawnZombieAtPlayer(player, args)
 
     local zombieType = args.zombieType or "normal"
     local count = math.min(args.count or 1, 50) -- Limit to 50 zombies max
+    local safeRadius = args.safeRadius or 0
     local spawnedCount = 0
+    local failedCount = 0
 
     for i = 1, count do
-        -- Get random square around player
-        local x = args.x + ZombRand(-2, 2)
-        local y = args.y + ZombRand(-2, 2)
-        local square = getCell():getGridSquare(x, y, args.z or 0)
+        -- Try up to 5 times to find a valid spawn location outside safeRadius
+        local maxAttempts = 5
+        local validSquareFound = false
 
-        if square then
-            local zombie = ZM_ZombieHandlerServer.createZombie(square, zombieType)
-            if zombie then
-                spawnedCount = spawnedCount + 1
+        for attempt = 1, maxAttempts do
+            -- Get random square around player
+            local radius = math.max(5, safeRadius) -- Use at least 5 tiles radius for spawning
+            local angle = ZombRand(0, 360) * math.pi / 180
+            local distance = safeRadius + ZombRand(5, radius)
+
+            local x = args.x + math.cos(angle) * distance
+            local y = args.y + math.sin(angle) * distance
+            local square = getCell():getGridSquare(x, y, args.z or 0)
+
+            -- Check if square is valid and no player is within safeRadius
+            if square and not ZM_ZombieHandlerServer.isPlayerNearby(x, y, args.z or 0, safeRadius) then
+                local zombie = ZM_ZombieHandlerServer.createZombie(square, zombieType)
+                if zombie then
+                    spawnedCount = spawnedCount + 1
+                    validSquareFound = true
+                    break
+                end
             end
+        end
+
+        if not validSquareFound then
+            failedCount = failedCount + 1
         end
     end
 
+    local message = "Spawned " .. spawnedCount .. " " .. zombieType .. " zombie(s)!"
+    if failedCount > 0 then
+        message = message .. " (" .. failedCount .. " failed due to safe radius constraints)"
+    end
+
     sendServerCommand(player, "ZM_ZombieHandler", "zombieSpawned", {
-        message = "Spawned " .. spawnedCount .. " " .. zombieType .. " zombie(s)!"
+        message = message
     })
 
     print("[ZM_ZombieHandler] " .. player:getUsername() .. " spawned " .. spawnedCount .. " " .. zombieType .. " zombies")
@@ -222,7 +265,7 @@ function ZM_ZombieHandlerServer.spawnZombieAtCoords(player, args)
     })
 end
 
--- Function to spawn horde
+-- Modify the spawnHorde function to use safeRadius
 function ZM_ZombieHandlerServer.spawnHorde(player, args)
     if not player:isAccessLevel("admin") then
         sendServerCommand(player, "ZM_ZombieHandler", "spawnError", {
@@ -233,25 +276,13 @@ function ZM_ZombieHandlerServer.spawnHorde(player, args)
 
     local count = math.min(args.count or 10, 100) -- Limit to 100 zombies max for horde
     local radius = args.radius or 5
+    local safeRadius = args.safeRadius or 0
     local isTargeted = args.isTargeted or false
     local targetUsername = args.targetUsername
     local targetPlayer = nil
     local spawnedCount = 0
-    local zombieType = args.zombieType or "horde" -- Use explicit zombie type from args
-
-    -- Print all args in a readable way
-    local function printTable(tbl, indent)
-        indent = indent or ""
-        for k, v in pairs(tbl) do
-            if type(v) == "table" then
-                print(indent .. tostring(k) .. ":")
-                printTable(v, indent .. "  ")
-            else
-                print(indent .. tostring(k) .. ": " .. tostring(v))
-            end
-        end
-    end
-    printTable(args)
+    local failedCount = 0
+    local zombieType = args.zombieType or "horde"
 
     -- Validate zombie type
     if not ZM_ZombieHandlerServer.ZombieTypes[zombieType] then
@@ -280,57 +311,74 @@ function ZM_ZombieHandlerServer.spawnHorde(player, args)
         end
     end
 
+    -- Try to spawn each zombie
     for i = 1, count do
-        local x = args.x + ZombRand(-radius, radius)
-        local y = args.y + ZombRand(-radius, radius)
-        local square = getCell():getGridSquare(x, y, args.z or 0)
+        -- Try up to 5 times to find a valid spawn location
+        local maxAttempts = 5
+        local validSquareFound = false
 
-        if square then
-            -- Use the explicitly defined zombie type
-            local currentZombieType = zombieType
+        for attempt = 1, maxAttempts do
+            -- Calculate spawn position
+            local angle = ZombRand(0, 360) * math.pi / 180
+            local distance = safeRadius + ZombRand(1, radius - safeRadius)
+            if distance < 1 then distance = 1 end -- Ensure minimum distance
 
-            -- Optional: Add variety if specified (you can enable/disable this)
-            local addVariety = args.addVariety or false
-            if addVariety and zombieType == "horde" then
-                -- Mix of zombie types for variety (only if using "horde" type and variety is enabled)
-                if ZombRand(100) < 15 then -- 15% chance for special zombies
-                    local specialTypes = {"runner", "elite", "sprinter"}
-                    currentZombieType = specialTypes[ZombRand(#specialTypes) + 1]
-                end
-            end
+            local x = args.x + math.cos(angle) * distance
+            local y = args.y + math.sin(angle) * distance
+            local square = getCell():getGridSquare(x, y, args.z or 0)
 
-            local zombie = ZM_ZombieHandlerServer.createZombie(square, currentZombieType)
-            if zombie then
-                spawnedCount = spawnedCount + 1
+            -- Check if square is valid and outside safeRadius
+            if square and not ZM_ZombieHandlerServer.isPlayerNearby(x, y, args.z or 0, safeRadius) then
+                -- Determine zombie type (possibly with variety)
+                local currentZombieType = zombieType
+                local addVariety = args.addVariety or false
 
-                -- Set zombie target if targeting is enabled
-                if isTargeted and targetPlayer then
-                    zombie:setTarget(targetPlayer)
-                    zombie:setTargetSeenTime(108000) -- Keep target for a very long time
-                    zombie:setStaggerBack(false) -- Prevent stagger to maintain pursuit
-                    -- zombie:setLastTargetSeenX(targetPlayer:getX())
-                    -- zombie:setLastTargetSeenY(targetPlayer:getY())
-                    zombie:pathToCharacter(targetPlayer) -- Force pathfinding to target player
-
-                    zombie:setBecomeCrawler(false) -- Don't become crawler
-                    zombie:setFallOnFront(false) -- Don't fall forward
-                    zombie:setKnockedDown(false) -- Not knocked down
-                    -- zombie:setOnFloor(false)
-                    -- Make zombies more focused on the target
-                    if zombie:getStats() then
-                        zombie:getStats():setAnger(1.0) -- Max anger
-                        zombie:getStats():setStress(1.0) -- Max stress for aggression
+                if addVariety and zombieType == "horde" then
+                    -- Mix of zombie types for variety
+                    if ZombRand(100) < 15 then -- 15% chance for special zombies
+                        local specialTypes = {"runner", "elite", "sprinter"}
+                        currentZombieType = specialTypes[ZombRand(#specialTypes) + 1]
                     end
                 end
-            end
 
-            sendServerCommand(player, "ZM_ZombieHandler", "zombieSpawned", {
-                message = "Spawned " .. currentZombieType .. " zombie at coordinates: (" .. x .. ", " .. y .. ", " .. (args.z or 0) .. ")"
-            })
+                -- Create the zombie
+                local zombie = ZM_ZombieHandlerServer.createZombie(square, currentZombieType)
+                if zombie then
+                    spawnedCount = spawnedCount + 1
+                    validSquareFound = true
+
+                    -- Set zombie target if targeting is enabled
+                    if isTargeted and targetPlayer then
+                        zombie:setTarget(targetPlayer)
+                        zombie:setTargetSeenTime(108000)
+                        zombie:setStaggerBack(false)
+                        zombie:pathToCharacter(targetPlayer)
+                        zombie:setBecomeCrawler(false)
+                        zombie:setFallOnFront(false)
+                        zombie:setKnockedDown(false)
+
+                        if zombie:getStats() then
+                            zombie:getStats():setAnger(1.0)
+                            zombie:getStats():setStress(1.0)
+                        end
+                    end
+
+                    break
+                end
+            end
+        end
+
+        if not validSquareFound then
+            failedCount = failedCount + 1
         end
     end
 
+    -- Report results
     local message = "Spawned horde of " .. spawnedCount .. " " .. zombieType .. " zombies!"
+    if failedCount > 0 then
+        message = message .. " (" .. failedCount .. " failed due to safe radius constraints)"
+    end
+
     if isTargeted and targetPlayer then
         message = message .. " Targeting: " .. targetPlayer:getUsername()
     end

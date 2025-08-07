@@ -48,8 +48,8 @@ ZM_ZombieHandler.ZombieTypes = {
         profession = "Police"
     },
     ["horde"] = {
-        health = 60,
-        strength = 1,
+        health = 100,
+        strength = 3,
         fitness = 2,
         walkType = "shamble",
         canSprint = false,
@@ -76,6 +76,36 @@ ZM_ZombieHandler.ZombieTypes = {
         isCrawler = true
     }
 }
+
+-- Day Psycho at player location
+function spawnDayPsycho()
+    local sq = getPlayer():getCurrentSquare()
+    sendClientCommand('PsychoZed', 'doSpawn', {x = sq:getX() + 30, y = sq:getY() + 30, z = sq:getZ(), count = 1, fit = 'Psycho1', fChance = 100, isDown = false})
+    print("Spawning Day Psycho (Psycho1)")
+end
+
+-- Night Psycho at player location
+function spawnNightPsycho()
+    local sq = getPlayer():getCurrentSquare()
+    sendClientCommand('PsychoZed', 'doSpawn', {x = sq:getX() + 30, y = sq:getY() + 30, z = sq:getZ(), count = 1, fit = 'Psycho2', fChance = 100, isDown = false})
+    print("Spawning Night Psycho (Psycho2)")
+end
+
+-- Knocked down Day Psycho
+function spawnDayPsychoDown()
+    local sq = getPlayer():getCurrentSquare()
+    sendClientCommand('PsychoZed', 'doSpawn', {x = sq:getX() + 30, y = sq:getY() + 30, z = sq:getZ(), count = 1, fit = 'Psycho1', fChance = 100, isDown = true})
+    print("Spawning knocked down Day Psycho")
+end
+
+-- At specific coordinates
+function spawnPsychoAt(x, y, z, psychoType, isDown)
+    psychoType = psychoType or 'Psycho1'
+    isDown = isDown or false
+    z = z or 0
+    sendClientCommand('PsychoZed', 'doSpawn', {x = x, y = y, z = z, count = 1, fit = psychoType, fChance = 100, isDown = isDown})
+    print("Spawning " .. psychoType .. " at " .. x .. ", " .. y .. ", " .. z)
+end
 
 -- This is defined outside any function (global scope)
 local soundFunction = function()
@@ -108,7 +138,7 @@ local soundFunction = function()
 end
 
 -- Function to spawn zombie at player location
-function ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, count)
+function ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, count, safeRadius)
     local player = getPlayer()
     if not player then
         print("Error: No player found")
@@ -117,15 +147,17 @@ function ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, count)
 
     count = count or 1
     zombieType = zombieType or "normal"
+    safeRadius = safeRadius or 0 -- Default to 0 (no safe radius)
 
     -- Send request to server
     sendClientCommand("ZM_ZombieHandler", "spawnZombieAtPlayer", {
         username = player:getUsername(),
         zombieType = zombieType,
         count = count,
-        x = player:getX(),
-        y = player:getY(),
-        z = player:getZ()
+        x = player:getX() + 20,
+        y = player:getY() + 20,
+        z = player:getZ(),
+        safeRadius = safeRadius
     })
 
     -- player:Say("Requesting " .. count .. " " .. zombieType .. " zombie(s)...")
@@ -158,7 +190,8 @@ function ZM_ZombieHandler.spawnZombieAtCoords(x, y, z, zombieType, count)
 end
 
 -- Function to spawn horde around player
-function ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety)
+-- Function to spawn horde around player
+function ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety, safeRadius)
     local player = getPlayer()
     if not player then
         print("Error: No player found")
@@ -170,6 +203,7 @@ function ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, 
     isTargeted = isTargeted or false
     zombieType = zombieType or "horde"
     addVariety = addVariety or false
+    safeRadius = safeRadius or 0 -- Default to 0 (no safe radius)
 
     sendClientCommand("ZM_ZombieHandler", "spawnHorde", {
         username = player:getUsername(),
@@ -179,9 +213,10 @@ function ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, 
         targetUsername = targetUsername,
         zombieType = zombieType,
         addVariety = addVariety,
-        x = player:getX(),
-        y = player:getY(),
-        z = player:getZ()
+        x = player:getX() + 30,
+        y = player:getY() + 30,
+        z = player:getZ(),
+        safeRadius = safeRadius
     })
 
     local message = "Requesting horde of " .. count .. " " .. zombieType .. " zombies..."
@@ -193,12 +228,11 @@ function ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, 
 end
 
 -- Console wrapper functions
-function ZM_ZombieHandler.consoleSpawnZombie(zombieType, count)
-    return ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, count)
+function ZM_ZombieHandler.consoleSpawnZombie(zombieType, count, safeRadius)
+    return ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, count, safeRadius)
 end
-
-function ZM_ZombieHandler.consoleSpawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety)
-    return ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety)
+function ZM_ZombieHandler.consoleSpawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety, safeRadius)
+    return ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety, safeRadius)
 end
 
 -- Function to check zombie types
