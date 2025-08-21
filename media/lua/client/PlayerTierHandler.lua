@@ -274,11 +274,8 @@ function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
   else
     context:addOption("Check My Tier", player, PlayerTierHandler.checkPlayerTier, player)
     context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
-    context:addOption("VIP: (DANGER!) Update My Tier To Minimum VIP Min Tier", player, PlayerTierHandler.loadTierFromServer, player)
+    -- context:addOption("VIP: (DANGER!) Update My Tier To Minimum VIP Min Tier", player, PlayerTierHandler.loadTierFromServer, player)
   end
-
-  -- Add book bonus testing options
-  context:addOption("Check Active Boost", player, PlayerTierHandler.checkActiveBookBonuses)
 
   -- Add admin-only options
   if player:isAccessLevel("admin") then
@@ -346,7 +343,7 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
   end
   local statsChanged = false
 
-  -- Title = 1 (VIP) must have at least Champion stats
+  -- Title = 1 (VVIP) must have at least Champion stats
   if playerTitle == 1 then
     local minDays = 21  -- > 20 days needed for Champion
     local minKills = 2000
@@ -419,17 +416,17 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
       newTierValue = 5
       -- CharacterManager.instance:addFlag("legendTier")
   end
-  if (survivalDays > 36 and zombieKills >= 8000) then
+  if (survivalDays > 30 and zombieKills >= 16000) then
       newTier = "Immortal"
       newTierValue = 6
       -- CharacterManager.instance:addFlag("immortalTier")
   end
-  if (survivalDays > 61 and zombieKills >= 10000) then
+  if (survivalDays > 30 and zombieKills >= 20000) then
       newTier = "Mythic"
       newTierValue = 7
       -- CharacterManager.instance:addFlag("mythicTier")
   end
-  if (survivalDays > 91 and zombieKills >= 12000) then
+  if (survivalDays > 30 and zombieKills >= 30000) then
       newTier = "Godlike"
       newTierValue = 8
       -- CharacterManager.instance:addFlag("godlikeTier")

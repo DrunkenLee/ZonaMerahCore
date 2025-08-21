@@ -95,7 +95,7 @@ function ZM_MiniHordeSpawner.spawnZombieBatch(batchSize, radius, typeDistributio
     end
 
     -- Spawn a larger horde to ensure good distribution
-    ZM_ZombieHandler.spawnHorde(batchSize, radius, false, nil, "horde", true)
+    ZM_ZombieHandler.spawnHorde(batchSize, radius, false, nil, "horde", true, 30)
 
 end
 
@@ -112,7 +112,7 @@ function ZM_MiniHordeSpawner.wave1()
         if not player then return end
 
         -- Set flag to mark horde as triggered
-        ZMServerwideFlagHandler.setFlag(ZM_MiniHordeSpawner.FLAGS.HORDE_ONE, 1)
+        ZMServerwideFlagHandler.consoleSetFlag(ZM_MiniHordeSpawner.FLAGS.HORDE_ONE, 1)
 
         local config = ZM_MiniHordeSpawner.WaveConfig.wave1
         local remainingZombies = config.totalZombies
@@ -319,4 +319,140 @@ function ZM_MiniHordeSpawner.triggerHorde(hordeNumber)
         print("Invalid horde number: " .. tostring(hordeNumber))
         return false
     end
+end
+
+-- Function to get all players within a specific zone
+function ZM_MiniHordeSpawner.getPlayersInZone(zone)
+    local playersInZone = {}
+    local onlinePlayers = getOnlinePlayers()
+
+    if not onlinePlayers then
+        -- Single player mode - check only the main player
+        local player = getPlayer()
+        if player and ZM_MiniHordeSpawner.isPlayerInZone(player, zone) then
+            table.insert(playersInZone, player:getUsername())
+        end
+        return playersInZone
+    end
+
+    -- Multiplayer mode - check all online players
+    for i = 0, onlinePlayers:size() - 1 do
+        local player = onlinePlayers:get(i)
+        if player and not player:isDead() and ZM_MiniHordeSpawner.isPlayerInZone(player, zone) then
+            table.insert(playersInZone, player:getUsername())
+        end
+    end
+
+    return playersInZone
+end
+
+-- Function to get all players within Horde Zone 1
+function ZM_MiniHordeSpawner.getPlayersInHordeZone1()
+    return ZM_MiniHordeSpawner.getPlayersInZone(ZM_MiniHordeSpawner.Zones.Horde1)
+end
+
+-- Function to get all players within Horde Zone 2
+function ZM_MiniHordeSpawner.getPlayersInHordeZone2()
+    return ZM_MiniHordeSpawner.getPlayersInZone(ZM_MiniHordeSpawner.Zones.Horde2)
+end
+
+-- Function to get all players within any horde zone (isolation zones)
+function ZM_MiniHordeSpawner.getAllPlayersInIsolationZones()
+    local allPlayersInZones = {}
+
+    -- Check Horde Zone 1
+    local playersInZone1 = ZM_MiniHordeSpawner.getPlayersInHordeZone1()
+    for _, username in ipairs(playersInZone1) do
+        table.insert(allPlayersInZones, {
+            username = username,
+            zone = "Horde1",
+            coordinates = ZM_MiniHordeSpawner.Zones.Horde1
+        })
+    end
+
+    -- Check Horde Zone 2
+    local playersInZone2 = ZM_MiniHordeSpawner.getPlayersInHordeZone2()
+    for _, username in ipairs(playersInZone2) do
+        table.insert(allPlayersInZones, {
+            username = username,
+            zone = "Horde2",
+            coordinates = ZM_MiniHordeSpawner.Zones.Horde2
+        })
+    end
+
+    return allPlayersInZones
+end
+
+-- Function to get count of players in each zone
+function ZM_MiniHordeSpawner.getZonePlayerCounts()
+    local zoneCounts = {
+        Horde1 = #ZM_MiniHordeSpawner.getPlayersInHordeZone1(),
+        Horde2 = #ZM_MiniHordeSpawner.getPlayersInHordeZone2(),
+        Total = 0
+    }
+
+    zoneCounts.Total = zoneCounts.Horde1 + zoneCounts.Horde2
+
+    return zoneCounts
+end
+
+-- Function to check if any players are in isolation zones
+function ZM_MiniHordeSpawner.hasPlayersInIsolationZones()
+    local counts = ZM_MiniHordeSpawner.getZonePlayerCounts()
+    return counts.Total > 0
+end
+
+-- Function to get detailed zone information with player data
+function ZM_MiniHordeSpawner.getZoneStatus()
+    local status = {
+        timestamp = os.time(),
+        zones = {
+            Horde1 = {
+                players = ZM_MiniHordeSpawner.getPlayersInHordeZone1(),
+                playerCount = 0,
+                coordinates = ZM_MiniHordeSpawner.Zones.Horde1,
+                flagName = ZM_MiniHordeSpawner.FLAGS.HORDE_ONE
+            },
+            Horde2 = {
+                players = ZM_MiniHordeSpawner.getPlayersInHordeZone2(),
+                playerCount = 0,
+                coordinates = ZM_MiniHordeSpawner.Zones.Horde2,
+                flagName = ZM_MiniHordeSpawner.FLAGS.HORDE_TWO
+            }
+        },
+        totalPlayersInZones = 0
+    }
+
+    -- Calculate counts
+    status.zones.Horde1.playerCount = #status.zones.Horde1.players
+    status.zones.Horde2.playerCount = #status.zones.Horde2.players
+    status.totalPlayersInZones = status.zones.Horde1.playerCount + status.zones.Horde2.playerCount
+
+    return status
+end
+
+-- Utility function to print zone status to console
+function ZM_MiniHordeSpawner.printZoneStatus()
+    local status = ZM_MiniHordeSpawner.getZoneStatus()
+
+    print("=== Horde Zone Status ===")
+    print("Timestamp: " .. status.timestamp)
+    print("Total players in isolation zones: " .. status.totalPlayersInZones)
+
+    for zoneName, zoneData in pairs(status.zones) do
+        print("\n" .. zoneName .. ":")
+        print("  Player count: " .. zoneData.playerCount)
+        print("  Flag: " .. zoneData.flagName)
+
+        if zoneData.playerCount > 0 then
+            print("  Players:")
+            for i, username in ipairs(zoneData.players) do
+                print("    " .. i .. ". " .. username)
+            end
+        else
+            print("  No players in zone")
+        end
+    end
+
+    print("========================")
 end
