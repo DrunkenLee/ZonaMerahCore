@@ -35,7 +35,7 @@ ZM_ZombieHandler.ZombieTypes = {
         fitness = 5,
         walkType = "sprint2",
         canSprint = true,
-        outfit = "ArmyCamoGreen",
+        outfit = "Police",
         profession = "Soldier"
     },
     ["boss"] = {
@@ -355,8 +355,5 @@ Events.OnServerCommand.Add(function(module, command, args)
         end
     end
 end)
-
--- Hook into player context menu
--- Events.OnFillInventoryObjectContextMenu.Add(ZM_ZombieHandler.addZombieSpawnMenu)
 
 return ZM_ZombieHandler

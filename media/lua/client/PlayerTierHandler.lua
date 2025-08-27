@@ -345,8 +345,8 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
 
   -- Title = 1 (VVIP) must have at least Champion stats
   if playerTitle == 1 then
-    local minDays = 21  -- > 20 days needed for Champion
-    local minKills = 2000
+    local minDays = 15  -- > 20 days needed for Champion
+    local minKills = 4001
 
     if survivalDays < minDays then
       local minHours = minDays * 24
@@ -370,8 +370,8 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
 
   -- Title >= 2 (VVIP or MVP) must have at least Legend stats
   if playerTitle >= 2 then
-    local minDays = 31  -- > 30 days needed for Legend
-    local minKills = 4000
+    local minDays = 16  -- > 30 days needed for Legend
+    local minKills = 8001
 
     if survivalDays < minDays then
       local minHours = minDays * 24
@@ -397,36 +397,36 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
   local newTierValue = 1
 
   -- Both survival days AND zombie kills must be met to advance tiers
-  if (survivalDays > 5 and zombieKills >= 150) then
+  if (survivalDays > 3 and zombieKills >= 300) then
       newTier = "Adventurer"
       newTierValue = 2
   end
-  if (survivalDays > 15 and zombieKills >= 500) then
+  if (survivalDays > 5 and zombieKills >= 1000) then
       newTier = "Veteran"
       newTierValue = 3
       -- CharacterManager.instance:addFlag("veteranTier")
   end
-  if (survivalDays > 20 and zombieKills >= 2000) then
+  if (survivalDays > 10 and zombieKills >= 4000) then
       newTier = "Champion"
       newTierValue = 4
       -- CharacterManager.instance:addFlag("championTier")
   end
-  if (survivalDays > 30 and zombieKills >= 4000) then
+  if (survivalDays > 15 and zombieKills >= 8000) then
       newTier = "Legend"
       newTierValue = 5
       -- CharacterManager.instance:addFlag("legendTier")
   end
-  if (survivalDays > 30 and zombieKills >= 16000) then
+  if (survivalDays > 15 and zombieKills >= 30000) then
       newTier = "Immortal"
       newTierValue = 6
       -- CharacterManager.instance:addFlag("immortalTier")
   end
-  if (survivalDays > 30 and zombieKills >= 20000) then
+  if (survivalDays > 15 and zombieKills >= 50000) then
       newTier = "Mythic"
       newTierValue = 7
       -- CharacterManager.instance:addFlag("mythicTier")
   end
-  if (survivalDays > 30 and zombieKills >= 30000) then
+  if (survivalDays > 15 and zombieKills >= 75000) then
       newTier = "Godlike"
       newTierValue = 8
       -- CharacterManager.instance:addFlag("godlikeTier")

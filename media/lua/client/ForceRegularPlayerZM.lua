@@ -38,7 +38,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 
     local username = playerObj:getUsername()
 
-    if username == "BlondeDanger" then
+    if username == "NenekLincah" then
         return
     end
 

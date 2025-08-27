@@ -77,6 +77,177 @@ ZM_ZombieHandlerServer.ZombieTypes = {
     }
 }
 
+function ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
+    if not zombie then return end
+
+    -- Safety check for SandBoxVars
+    if not SandBoxVars then
+        print("SandBoxVars not available, using default loot settings")
+        -- Use hardcoded defaults when sandbox vars aren't available
+        local defaultLootTables = {
+            ["elite"] = {
+                {item = "Base.Axe", quantity = 1, chance = 20}
+            },
+            ["boss"] = {
+                {item = "Base.Katana", quantity = 1, chance = 0}
+            },
+            ["tank"] = {
+                {item = "Base.Sledgehammer", quantity = 1, chance = 0}
+            }
+        }
+
+        local lootTable = defaultLootTables[zombieType]
+        if lootTable then
+            zombie:getModData().ZM_LootTable = {}
+            zombie:getModData().ZM_ZombieType = zombieType
+
+            for _, lootItem in ipairs(lootTable) do
+                if ZombRand(100) < lootItem.chance then
+                    table.insert(zombie:getModData().ZM_LootTable, lootItem)
+                    print("Added " .. lootItem.item .. " to " .. zombieType .. " loot table (default settings)")
+                end
+            end
+        end
+        return
+    end
+
+    -- Check if zombie loot is enabled in sandbox settings
+    local lootEnabled = SandBoxVars.ZMZombieLootEnabled
+    if lootEnabled == nil then
+        lootEnabled = true -- Default to true if not set
+    end
+
+    if not lootEnabled then
+        print("Zombie loot disabled in sandbox settings")
+        return
+    end
+
+    local lootMultiplier = SandBoxVars.ZMZombieLootMultiplier or 1.0
+
+    -- Function to parse comma-separated strings
+    local function parseCommaString(str, default)
+        if not str or str == "" then return default end
+        local result = {}
+        for item in string.gmatch(str, "([^,]+)") do
+            table.insert(result, string.gsub(item, "^%s*(.-)%s*$", "%1")) -- trim whitespace
+        end
+        return result
+    end
+
+    -- Function to parse comma-separated numbers
+    local function parseCommaNumbers(str, default)
+        if not str or str == "" then return default end
+        local result = {}
+        for item in string.gmatch(str, "([^,]+)") do
+            local num = tonumber(string.gsub(item, "^%s*(.-)%s*$", "%1"))
+            table.insert(result, num or 1)
+        end
+        return result
+    end
+
+    -- Build dynamic loot tables from sandbox settings
+    local lootTables = {}
+
+    -- Elite zombie loot
+    local eliteItems = parseCommaString(SandBoxVars.ZMEliteLootItems, {"Base.Axe", "Base.9mmClip", "Base.Bullets9mm"})
+    local eliteQuantities = parseCommaNumbers(SandBoxVars.ZMEliteLootQuantities, {1, 2, 15})
+    local eliteChances = parseCommaNumbers(SandBoxVars.ZMEliteLootChances, {100, 80, 90})
+
+    lootTables["elite"] = {}
+    for i, item in ipairs(eliteItems) do
+        table.insert(lootTables["elite"], {
+            item = item,
+            quantity = math.max(1, math.floor((eliteQuantities[i] or 1) * lootMultiplier)),
+            chance = eliteChances[i] or 100
+        })
+    end
+
+    -- Boss zombie loot
+    local bossItems = parseCommaString(SandBoxVars.ZMBossLootItems, {"Base.Katana", "Base.ShotgunShells", "Base.FirstAidKit"})
+    local bossQuantities = parseCommaNumbers(SandBoxVars.ZMBossLootQuantities, {1, 10, 1})
+    local bossChances = parseCommaNumbers(SandBoxVars.ZMBossLootChances, {100, 90, 70})
+
+    lootTables["boss"] = {}
+    for i, item in ipairs(bossItems) do
+        table.insert(lootTables["boss"], {
+            item = item,
+            quantity = math.max(1, math.floor((bossQuantities[i] or 1) * lootMultiplier)),
+            chance = bossChances[i] or 100
+        })
+    end
+
+    -- Tank zombie loot
+    local tankItems = parseCommaString(SandBoxVars.ZMTankLootItems, {"Base.Sledgehammer", "Base.Pills"})
+    local tankQuantities = parseCommaNumbers(SandBoxVars.ZMTankLootQuantities, {1, 2})
+    local tankChances = parseCommaNumbers(SandBoxVars.ZMTankLootChances, {60, 50})
+
+    lootTables["tank"] = {}
+    for i, item in ipairs(tankItems) do
+        table.insert(lootTables["tank"], {
+            item = item,
+            quantity = math.max(1, math.floor((tankQuantities[i] or 1) * lootMultiplier)),
+            chance = tankChances[i] or 100
+        })
+    end
+
+    local lootTable = lootTables[zombieType]
+    if not lootTable then return end
+
+    -- Store loot data directly on the zombie object
+    zombie:getModData().ZM_LootTable = {}
+    zombie:getModData().ZM_ZombieType = zombieType
+
+    -- Determine what loot this zombie will drop
+    for _, lootItem in ipairs(lootTable) do
+        local chance = lootItem.chance or 100
+        if ZombRand(100) < chance then
+            table.insert(zombie:getModData().ZM_LootTable, lootItem)
+            print("Added " .. lootItem.item .. " to " .. zombieType .. " loot table (chance: " .. chance .. "%)")
+        end
+    end
+
+    print("Prepared loot for " .. zombieType .. " zombie (loot enabled: " .. tostring(lootEnabled) .. ", multiplier: " .. lootMultiplier .. ")")
+end
+
+ZM_ZombieHandlerServer.checkLootSettings = function()
+    print("=== Zona Merah Zombie Loot Settings ===")
+    print("Loot Enabled: " .. tostring(SandBoxVars.ZMZombieLootEnabled))
+    print("Loot Multiplier: " .. (SandBoxVars.ZMZombieLootMultiplier or "default"))
+    print("")
+    print("Elite Items: " .. (SandBoxVars.ZMEliteLootItems or "default"))
+    print("Elite Quantities: " .. (SandBoxVars.ZMEliteLootQuantities or "default"))
+    print("Elite Chances: " .. (SandBoxVars.ZMEliteLootChances or "default"))
+    print("")
+    print("Boss Items: " .. (SandBoxVars.ZMBossLootItems or "default"))
+    print("Boss Quantities: " .. (SandBoxVars.ZMBossLootQuantities or "default"))
+    print("Boss Chances: " .. (SandBoxVars.ZMBossLootChances or "default"))
+    print("")
+    print("Tank Items: " .. (SandBoxVars.ZMTankLootItems or "default"))
+    print("Tank Quantities: " .. (SandBoxVars.ZMTankLootQuantities or "default"))
+    print("Tank Chances: " .. (SandBoxVars.ZMTankLootChances or "default"))
+    print("=====================================")
+end
+
+-- Zombie death handler
+ZM_ZombieHandlerServer.onZombieDeath = function(zombie)
+    if not zombie then return end
+
+    local modData = zombie:getModData()
+    if modData and modData.ZM_LootTable then
+        local square = zombie:getSquare()
+        if square then
+            for _, lootItem in ipairs(modData.ZM_LootTable) do
+                for i = 1, (lootItem.quantity or 1) do
+                    square:AddWorldInventoryItem(lootItem.item, 0, 0, 0)
+                end
+                print("Dropped " .. lootItem.item .. " from " .. (modData.ZM_ZombieType or "unknown") .. " zombie")
+            end
+        end
+    end
+end
+
+Events.OnZombieDead.Add(ZM_ZombieHandlerServer.onZombieDeath)
+
 -- Function to create and configure a zombie
 function ZM_ZombieHandlerServer.createZombie(square, zombieType)
     if not square then return nil end
@@ -152,6 +323,9 @@ function ZM_ZombieHandlerServer.createZombie(square, zombieType)
             zombie:getBodyDamage():setOverallBodyHealth(zombieData.health * 1.5)
         end
     end
+
+    -- ADD THIS LINE - Call the function to add loot to the zombie
+    ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
 
     return zombie
 end

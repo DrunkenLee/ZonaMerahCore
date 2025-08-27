@@ -1,0 +1,6 @@
+# This is a placeholder for the BirPletok.png icon
+# You'll need to create a 64x64 pixel PNG image for the beer icon
+# Place it at: media/textures/Item/BirPletok.png
+#
+# The image should show a beer bottle with Indonesian traditional design elements
+# representing Bir Pletok (traditional Indonesian beer)

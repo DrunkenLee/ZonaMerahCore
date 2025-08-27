@@ -1,0 +1,2 @@
+DisplayName_BirPletok = "Bir Pletok"
+Tooltip_BirPletok = "A traditional Indonesian spiced beer made with ginger, lemongrass, and palm sugar. Refreshing and mildly alcoholic."

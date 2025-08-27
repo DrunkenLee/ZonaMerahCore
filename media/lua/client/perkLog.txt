@@ -1,0 +1,3 @@
+[26-05-25 17:38:45.491] [76561199659953714][TehOlin][15101,6658,1][Cooking=1, Fitness=8, Strength=8, Blunt=4, Axe=0, Sprinting=4, Lightfoot=2, Nimble=3, Sneak=3, Woodwork=1, Aiming=0, Reloading=0, Farming=5, Fishing=0, Trapping=0, PlantScavenging=0, Doctor=0, Electricity=0, MetalWelding=0, Mechanics=0, Spear=0, Maintenance=6, SmallBlade=0, LongBlade=2, SmallBlunt=1, Tailoring=0, Cleaning=0, Dancing=0, Meditation=3, Music=0][Hours Survived: 259].
+[26-05-25 17:58:03.582] [76561199659953714][TehOlin][15083,6536,0][Level Changed][Woodwork][2][Hours Survived: 267].
+[26-05-25 18:26:06.778] [76561199659953714][TehOlin][15097,6616,0][Level Changed][Woodwork][3][Hours Survived: 278].

@@ -1,15 +1,121 @@
 VERSION = 1,
 
-option TierHandler.TierName
+option ZMZombieLootEnabled
 {
-    type = string,
-    default = Server Points,
-    page = ZonaMerahTier
+    type = boolean,
+    default = true,
+    page = ZonaMerah,
+    translation = ZMZombieLootEnabled,
 }
 
-option TierHandler.TitleName
+option ZMEliteLootChance
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 100,
+    page = ZonaMerah,
+    translation = ZMEliteLootChance,
+}
+
+option ZMBossLootChance
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 75,
+    page = ZonaMerah,
+    translation = ZMBossLootChance,
+}
+
+option ZMTankLootChance
+{
+    type = integer,
+    min = 0,
+    max = 100,
+    default = 50,
+    page = ZonaMerah,
+    translation = ZMTankLootChance,
+}
+
+option ZMZombieLootMultiplier
+{
+    type = double,
+    min = 0.1,
+    max = 5.0,
+    default = 1.0,
+    page = ZonaMerah,
+    translation = ZMZombieLootMultiplier,
+}
+
+option ZMEliteLootItems
 {
     type = string,
-    default = admin,
-    page = ZonaMerahTitle
+    default = "Base.Axe,Base.9mmClip,Base.Bullets9mm",
+    page = ZonaMerah,
+    translation = ZMEliteLootItems,
+}
+
+option ZMBossLootItems
+{
+    type = string,
+    default = "Base.Katana,Base.ShotgunShells,Base.FirstAidKit",
+    page = ZonaMerah,
+    translation = ZMBossLootItems,
+}
+
+option ZMTankLootItems
+{
+    type = string,
+    default = "Base.Sledgehammer,Base.Pills",
+    page = ZonaMerah,
+    translation = ZMTankLootItems,
+}
+
+option ZMEliteLootQuantities
+{
+    type = string,
+    default = "1,2,15",
+    page = ZonaMerah,
+    translation = ZMEliteLootQuantities,
+}
+
+option ZMBossLootQuantities
+{
+    type = string,
+    default = "1,10,1",
+    page = ZonaMerah,
+    translation = ZMBossLootQuantities,
+}
+
+option ZMTankLootQuantities
+{
+    type = string,
+    default = "1,2",
+    page = ZonaMerah,
+    translation = ZMTankLootQuantities,
+}
+
+option ZMEliteLootChances
+{
+    type = string,
+    default = "100,80,90",
+    page = ZonaMerah,
+    translation = ZMEliteLootChances,
+}
+
+option ZMBossLootChances
+{
+    type = string,
+    default = "100,90,70",
+    page = ZonaMerah,
+    translation = ZMBossLootChances,
+}
+
+option ZMTankLootChances
+{
+    type = string,
+    default = "60,50",
+    page = ZonaMerah,
+    translation = ZMTankLootChances,
 }
