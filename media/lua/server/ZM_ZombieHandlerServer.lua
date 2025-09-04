@@ -86,13 +86,13 @@ function ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
         -- Use hardcoded defaults when sandbox vars aren't available
         local defaultLootTables = {
             ["elite"] = {
-                {item = "Base.Axe", quantity = 1, chance = 20}
+                {item = "Base.Axe", quantity = 1, chance = 100}
             },
             ["boss"] = {
-                {item = "Base.Katana", quantity = 1, chance = 0}
+                {item = "Base.Katana", quantity = 1, chance = 100}
             },
             ["tank"] = {
-                {item = "Base.Sledgehammer", quantity = 1, chance = 0}
+                {item = "Base.Sledgehammer", quantity = 1, chance = 60}
             }
         }
 
@@ -153,13 +153,17 @@ function ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
     local eliteQuantities = parseCommaNumbers(SandBoxVars.ZMEliteLootQuantities, {1, 2, 15})
     local eliteChances = parseCommaNumbers(SandBoxVars.ZMEliteLootChances, {100, 80, 90})
 
+    print("DEBUG: Elite chances parsed from sandbox: " .. table.concat(eliteChances, ", "))
+
     lootTables["elite"] = {}
     for i, item in ipairs(eliteItems) do
+        local finalChance = eliteChances[i] or 100
         table.insert(lootTables["elite"], {
             item = item,
             quantity = math.max(1, math.floor((eliteQuantities[i] or 1) * lootMultiplier)),
-            chance = eliteChances[i] or 100
+            chance = finalChance
         })
+        print("DEBUG: Elite item " .. item .. " assigned chance " .. finalChance)
     end
 
     -- Boss zombie loot
@@ -200,9 +204,24 @@ function ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
     -- Determine what loot this zombie will drop
     for _, lootItem in ipairs(lootTable) do
         local chance = lootItem.chance or 100
-        if ZombRand(100) < chance then
+        print("DEBUG: Item " .. lootItem.item .. " has chance " .. chance .. " for " .. zombieType)
+
+        -- Ensure chance is never negative and handle 0 case explicitly
+        if chance <= 0 then
+            print("Skipped " .. lootItem.item .. " for " .. zombieType .. " (chance: " .. chance .. "% - disabled)")
+        elseif chance >= 100 then
+            -- 100% chance - always add
             table.insert(zombie:getModData().ZM_LootTable, lootItem)
-            print("Added " .. lootItem.item .. " to " .. zombieType .. " loot table (chance: " .. chance .. "%)")
+            print("Added " .. lootItem.item .. " to " .. zombieType .. " loot table (chance: " .. chance .. "% - guaranteed)")
+        else
+            -- Roll for chance (1 to 100)
+            local roll = ZombRand(1, 101) -- 1-100 inclusive
+            if roll <= chance then
+                table.insert(zombie:getModData().ZM_LootTable, lootItem)
+                print("Added " .. lootItem.item .. " to " .. zombieType .. " loot table (chance: " .. chance .. "%, rolled: " .. roll .. ")")
+            else
+                print("Failed to add " .. lootItem.item .. " to " .. zombieType .. " loot table (chance: " .. chance .. "%, rolled: " .. roll .. ")")
+            end
         end
     end
 
@@ -510,7 +529,7 @@ function ZM_ZombieHandlerServer.spawnHorde(player, args)
                 if addVariety and zombieType == "horde" then
                     -- Mix of zombie types for variety
                     if ZombRand(100) < 15 then -- 15% chance for special zombies
-                        local specialTypes = {"runner", "elite", "sprinter"}
+                        local specialTypes = {"elite", "elite", "elite"}
                         currentZombieType = specialTypes[ZombRand(#specialTypes) + 1]
                     end
                 end
@@ -524,7 +543,7 @@ function ZM_ZombieHandlerServer.spawnHorde(player, args)
                     -- Set zombie target if targeting is enabled
                     if isTargeted and targetPlayer then
                         zombie:setTarget(targetPlayer)
-                        zombie:setTargetSeenTime(108000)
+                        -- zombie:setTargetSeenTime(108000)
                         zombie:setStaggerBack(false)
                         zombie:pathToCharacter(targetPlayer)
                         zombie:setBecomeCrawler(false)
