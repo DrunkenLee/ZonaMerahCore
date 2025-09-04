@@ -139,7 +139,8 @@ ZMEquipmentHandler.restrictedGearTypes = {
   ["Base.Tifa"] = true,
   ["Base.ada_wong"] = true,
   ["Base.fbi"] = true,
-  ["Base.swat"] = true
+  ["Base.swat"] = true,
+  ["Base.2B"] = true
 }
 
 function ZMEquipmentHandler.logRestrictedGear(player, itemType)
@@ -416,6 +417,15 @@ function ZMEquipmentHandler.grantLocationPermission(player, location)
     player:Say("Permission granted for " .. location)
     ZMEquipmentHandler.debugItemTypes(player)
 end
+
+-- Initialize restricted gear permissions
+function ZMEquipmentHandler.initializeRestrictedGearPermissions()
+    -- Allow specific users to equip restricted items
+    ZMEquipmentHandler.setRestrictedGearAllow("inzhani", "Base.2B", true)
+end
+
+-- Call initialization when the module loads
+ZMEquipmentHandler.initializeRestrictedGearPermissions()
 
 -- Register event handlers
 Events.OnClothingUpdated.Add(ZMEquipmentHandler.onClothingUpdated)
