@@ -41,6 +41,16 @@ Commands.CustomExecute = function(player, args)
     end
 end
 
+Commands.SendMessageZM = function(player, args)
+    local message = args.message or ""
+    if message ~= "" then
+
+        sendServerCommand(player, "ZonaMerahCore", "Broadcast", {message = message})
+
+        print("[ZonaMerahCore] - Broadcast requested by " .. player:getUsername() .. ": " .. message)
+    end
+end
+
 -- Register server command handlers
 local onClientCommand = function(module, command, player, args)
     if module == "ZonaMerahCore" and Commands[command] then
