@@ -1,0 +1,17 @@
+module Base {
+	sound ScreamerII_Agre { clip { file = media/sound/ScreamerII_Agre.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Pain1 { clip { file = media/sound/ScreamerII_Pain.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_SFX1 { clip { file = media/sound/ScreamerII_SFX1.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Weak { clip { file = media/sound/ScreamerII_Weak.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Death { clip { file = media/sound/ScreamerII_Death.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Growl { clip { file = media/sound/ScreamerII_Growl.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Pain2 { clip { file = media/sound/ScreamerII_Pain2.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Spawn { clip { file = media/sound/ScreamerII_Spawn.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Attack1 { clip { file = media/sound/ScreamerII_Attack.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Charge { clip { file = media/sound/ScreamerII_Charge.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Distant { clip { file = media/sound/ScreamerII_Distant.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+	sound ScreamerII_Attack2 { clip { file = media/sound/ScreamerII_Attack2.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+
+	sound ScreamerII_Slain { clip { file = media/sound/ScreamerII_Slain.ogg, distanceMax = 80, is3D = true, volume = 0.2, maxInstancesPerEmitter = 1, } }
+}
+

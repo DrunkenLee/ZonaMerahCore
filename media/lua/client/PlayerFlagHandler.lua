@@ -118,18 +118,151 @@ PlayerFlagHandler.requestBroadcast = function(message)
   return true
 end
 
+-- Function to check for required ritual items in a 5x5 area around the player
+PlayerFlagHandler.checkRitualItems = function()
+    local player = getPlayer()
+    if not player then return false, "Player not found" end
+
+    local playerSquare = player:getSquare()
+    if not playerSquare then return false, "Player square not found" end
+
+    local requiredItems = {
+        "RMWeapons.DragonsteelIngot",
+        "RMWeapons.EldritchWood",
+        "RMWeapons.SoulThread"
+    }
+
+    local foundItems = {}
+    local missingItems = {}
+
+    -- Initialize missing items list
+    for _, item in ipairs(requiredItems) do
+        missingItems[item] = true
+    end
+
+    local playerX = playerSquare:getX()
+    local playerY = playerSquare:getY()
+    local playerZ = playerSquare:getZ()
+
+    -- Check 5x5 area around player (-2 to +2 from player position)
+    for x = playerX - 2, playerX + 2 do
+        for y = playerY - 2, playerY + 2 do
+            local square = getCell():getGridSquare(x, y, playerZ)
+            if square then
+                -- Check for world objects that might contain items
+                local objects = square:getWorldObjects()
+                if objects then
+                    for i = 0, objects:size() - 1 do
+                        local obj = objects:get(i)
+                        if obj and obj.getContainer then
+                            local container = obj:getContainer()
+                            if container then
+                                local items = container:getItems()
+                                for j = 0, items:size() - 1 do
+                                    local item = items:get(j)
+                                    if item then
+                                        local fullType = item:getFullType()
+                                        for _, requiredItem in ipairs(requiredItems) do
+                                            if fullType == requiredItem and missingItems[requiredItem] then
+                                                foundItems[requiredItem] = true
+                                                missingItems[requiredItem] = nil
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+
+                -- Also check items directly on the ground (IsoWorldInventoryObject)
+                local worldObjects = square:getWorldObjects()
+                if worldObjects and worldObjects:size() > 0 then
+                    for j = 0, worldObjects:size() - 1 do
+                        local worldObj = worldObjects:get(j)
+                        if worldObj and worldObj.getItem then
+                            local item = worldObj:getItem()
+                            if item then
+                                local fullType = item:getFullType()
+                                for _, requiredItem in ipairs(requiredItems) do
+                                    if fullType == requiredItem and missingItems[requiredItem] then
+                                        foundItems[requiredItem] = true
+                                        missingItems[requiredItem] = nil
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Check if at least one item was found
+    local anyItemFound = false
+    for item, _ in pairs(foundItems) do
+        anyItemFound = true
+        break
+    end
+
+    if anyItemFound then
+        return true, "Required ritual item found"
+    else
+        local itemsText = table.concat(requiredItems, " OR ")
+        return false, "No ritual items found. You need at least one of these items: " .. itemsText
+    end
+end
+
 PlayerFlagHandler.RitualFunction = function(level)
     local flagName = "SummoningRitual"
     -- PlayerFlagHandler.giveFlag(flagName, level)
     local player = getPlayer()
     local username = player and player:getUsername() or "Unknown"
 
+    -- Validate ritual items before proceeding
+    local itemsFound, message = PlayerFlagHandler.checkRitualItems()
+    if not itemsFound then
+        player:Say("Ritual failed: " .. message .. ". Place these items within a 5x5 area around yourself before attempting the ritual.")
+        print("[AngelicGravestone] Ritual validation failed: " .. message)
+        return false
+    end
+
+    -- Send request to server to consume ritual items
+    local playerSquare = player:getSquare()
+    if playerSquare then
+        sendClientCommand("ZM_ZombieHandler", "consumeRitualItems", {
+            playerX = playerSquare:getX(),
+            playerY = playerSquare:getY(),
+            playerZ = playerSquare:getZ(),
+            ritualLevel = level
+        })
+
+        -- Store ritual level for when server responds
+        PlayerFlagHandler.pendingRitualLevel = level
+        player:Say("Preparing ritual materials...")
+        print("[AngelicGravestone] Requesting server to consume ritual items for level " .. level)
+        return true -- Return true for now, actual ritual will be triggered by server response
+    else
+        player:Say("Ritual failed: Unable to determine your location.")
+        print("[AngelicGravestone] Ritual failed: Player square not found")
+        return false
+    end
+end
+
+-- Function to execute the actual ritual after server confirms item consumption
+PlayerFlagHandler.executeRitual = function(level)
+    local player = getPlayer()
+    local username = player and player:getUsername() or "Unknown"
+
     if level == 30 then
+
+        -- change this to check surrounding area for this items
+
         sendClientCommand("ZonaMerahCore", "SendMessageZM", {
             message = username .. " has begun the level 30 summoning ritual! Brace yourselves!",
         })
         print("[AngelicGravestone] Starting ritual level 30")
-        player:setHealth(player:getHealth() - 0.3)
+        player:setHealth(player:getHealth() * 0.5)
         player:Say("Felt a sharp pain in my chest..." .. player:getHealth() .. " health remaining")
         print(player:getHealth() .. " health remaining")
         ZM_ZombieHandler.consoleSpawnHorde(100, 50, true, username, "elite", false, 30)
@@ -139,7 +272,7 @@ PlayerFlagHandler.RitualFunction = function(level)
             message = username .. " has begun the level 50 summoning ritual! Brace yourselves!",
         })
         print("[AngelicGravestone] Starting ritual level 50")
-        player:setHealth(player:getHealth() - 0.5)
+        player:setHealth(player:getHealth() * 0.7)
         player:Say("Felt a sharp pain in my chest..." .. player:getHealth() .. " health remaining")
         print(player:getHealth() .. " health remaining")
         ZM_ZombieHandler.consoleSpawnHorde(200, 50, true, username, "elite", false, 30)
@@ -149,7 +282,7 @@ PlayerFlagHandler.RitualFunction = function(level)
             message = username .. " has begun the level 70 summoning ritual! Brace yourselves!",
         })
         print("[AngelicGravestone] Starting ritual level 70")
-        player:setHealth(player:getHealth() - 0.7)
+        player:setHealth(player:getHealth() * 0.9)
         player:Say("Felt a sharp pain in my chest..." .. player:getHealth() .. " health remaining")
         print(player:getHealth() .. " health remaining")
         ZM_ZombieHandler.consoleSpawnHorde(300, 50, true, username, "elite", false, 30)
@@ -158,6 +291,8 @@ PlayerFlagHandler.RitualFunction = function(level)
         player:Say("Unknown ritual level: " .. tostring(level))
         print("[AngelicGravestone] Unknown ritual level: " .. tostring(level))
     end
+
+    return true
 end
 
 
@@ -312,23 +447,29 @@ local function OnRightClickInfo(playerNum, context, worldObjects, test)
 
     -- Add context menu options only once if Angelic Gravestone was found
     if angelicGravestoneFound and angelicGravestoneObj then
-        local option30 = context:addOption("Begin Summoning Ritual - 30", angelicGravestoneObj, function(thumpable)
-            PlayerFlagHandler.RitualFunction(30)
-            print("[AngelicGravestone] Starting ritual level 30")
-            -- Add your ritual logic here
-        end)
+        -- local option30 = context:addOption("Begin Summoning Ritual - 30", angelicGravestoneObj, function(thumpable)
+        --     PlayerFlagHandler.RitualFunction(30)
+        --     print("[AngelicGravestone] Starting ritual level 30")
+        --     -- Add your ritual logic here
+        -- end)
 
         local option50 = context:addOption("Begin Summoning Ritual - 50", angelicGravestoneObj, function(thumpable)
-            PlayerFlagHandler.RitualFunction(50)
-            print("[AngelicGravestone] Starting ritual level 50")
+
+	    -- Add validation logic here
+            local success = PlayerFlagHandler.RitualFunction(50)
+            if success then
+                print("[AngelicGravestone] Starting ritual level 50")
+            else
+                print("[AngelicGravestone] Ritual level 50 failed - missing required items")
+            end
             -- Add your ritual logic here
         end)
 
-        local option70 = context:addOption("Begin Summoning Ritual - 70", angelicGravestoneObj, function(thumpable)
-            PlayerFlagHandler.RitualFunction(70)
-            print("[AngelicGravestone] Starting ritual level 70")
-            -- Add your ritual logic here
-        end)
+        -- local option70 = context:addOption("Begin Summoning Ritual - 70", angelicGravestoneObj, function(thumpable)
+        --     PlayerFlagHandler.RitualFunction(70)
+        --     print("[AngelicGravestone] Starting ritual level 70")
+        --     -- Add your ritual logic here
+        -- end)
     end
 
     -- brief on-screen hint for the primary object (the direct hit) - thumpables only
@@ -365,11 +506,38 @@ Events.OnServerCommand.Add(function(module, command, args)
       end
   end
 
+  if module == "ZM_ZombieHandler" and command == "ritualItemConsumed" then
+      local player = getPlayer()
+      if args.success then
+          local consumedItem = args.consumedItem or "Unknown item"
+          player:Say("Ritual materials consumed: " .. consumedItem .. ". The ritual begins!")
+          print("[AngelicGravestone] Server consumed: " .. consumedItem)
+
+          -- Execute the actual ritual if we have a pending level
+          if PlayerFlagHandler.pendingRitualLevel then
+              PlayerFlagHandler.executeRitual(PlayerFlagHandler.pendingRitualLevel)
+              PlayerFlagHandler.pendingRitualLevel = nil
+          end
+      else
+          player:Say("Ritual failed: No required items could be found or consumed on the server.")
+          print("[AngelicGravestone] Server failed to consume ritual items")
+          PlayerFlagHandler.pendingRitualLevel = nil
+      end
+  end
+
   if module == "ZonaMerahCore" and command == "Broadcast" then
       local message = args.message or ""
       if message ~= "" then
           print("[ZonaMerahCore] Broadcast message received: " .. message)
-          addLineToChat(getText("[ZM] - ") .. message, "<RGB:" .. "0,255,0" .. ">");
+          addLineToChat(getText("[ZM Broadcast] - ") .. message, "<RGB:" .. "250,234,0" .. ">");
+      end
+  end
+
+  if module == "ZonaMerahCore" and command == "BroadcastToPlayers" then
+      local message = args.message or ""
+      if message ~= "" then
+          print("[ZonaMerahCore] Broadcast message received: " .. message)
+          addLineToChat(getText("[ZM Broadcast] - ") .. message, "<RGB:" .. "250,234,0" .. ">");
       end
   end
 end)

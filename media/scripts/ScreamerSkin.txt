@@ -1,0 +1,22 @@
+module ScreamerModII {
+    imports { Base }
+
+	item Screamer1
+	{
+		DisplayCategory = ZedDmg,
+		Type = Clothing,
+		ClothingItem = Screamer1,
+		BodyLocation = ZedDmg,
+		WorldRender = FALSE,
+	}
+
+	item Screamer2
+	{
+		DisplayCategory = ZedDmg,
+		Type = Clothing,
+		ClothingItem = Screamer2,
+		BodyLocation = ZedDmg,
+		WorldRender = FALSE,
+	}
+
+}

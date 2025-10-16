@@ -1,34 +1,69 @@
 Sandbox_EN = {
-    Sandbox_ZonaMerah = "Zona Merah Settings",
-    Sandbox_ZMZombieLootEnabled = "Enable Zombie Loot",
-    Sandbox_ZMZombieLootEnabled_tooltip = "Enable special loot drops from custom zombies",
-    Sandbox_ZMEliteLootChance = "Elite Zombie Loot Chance",
-    Sandbox_ZMEliteLootChance_tooltip = "Chance (0-100%) for elite zombies to drop loot",
-    Sandbox_ZMBossLootChance = "Boss Zombie Loot Chance",
-    Sandbox_ZMBossLootChance_tooltip = "Chance (0-100%) for boss zombies to drop loot",
-    Sandbox_ZMTankLootChance = "Tank Zombie Loot Chance",
-    Sandbox_ZMTankLootChance_tooltip = "Chance (0-100%) for tank zombies to drop loot",
-    Sandbox_ZMZombieLootMultiplier = "Zombie Loot Multiplier",
-    Sandbox_ZMZombieLootMultiplier_tooltip = "Multiplier for zombie loot quantity (0.1x to 5.0x)",
 
-    Sandbox_ZMEliteLootItems = "Elite Zombie Loot Items",
-    Sandbox_ZMEliteLootItems_tooltip = "Comma-separated list of items that elite zombies can drop (e.g., Base.Axe,Base.9mmClip)",
-    Sandbox_ZMBossLootItems = "Boss Zombie Loot Items",
-    Sandbox_ZMBossLootItems_tooltip = "Comma-separated list of items that boss zombies can drop",
-    Sandbox_ZMTankLootItems = "Tank Zombie Loot Items",
-    Sandbox_ZMTankLootItems_tooltip = "Comma-separated list of items that tank zombies can drop",
+    Sandbox_ScreamerModII= "Screamer",
 
-    Sandbox_ZMEliteLootQuantities = "Elite Loot Quantities",
-    Sandbox_ZMEliteLootQuantities_tooltip = "Comma-separated quantities for each elite loot item (e.g., 1,2,15)",
-    Sandbox_ZMBossLootQuantities = "Boss Loot Quantities",
-    Sandbox_ZMBossLootQuantities_tooltip = "Comma-separated quantities for each boss loot item",
-    Sandbox_ZMTankLootQuantities = "Tank Loot Quantities",
-    Sandbox_ZMTankLootQuantities_tooltip = "Comma-separated quantities for each tank loot item",
+ 	Sandbox_ScreamerModII_ShowName = "Show Screamer Name",
+	Sandbox_ScreamerModII_ShowName_tooltip = "Shows Screamer Name above its head ",
 
-    Sandbox_ZMEliteLootChances = "Elite Loot Item Chances",
-    Sandbox_ZMEliteLootChances_tooltip = "Comma-separated drop chances (0-100) for each elite loot item",
-    Sandbox_ZMBossLootChances = "Boss Loot Item Chances",
-    Sandbox_ZMBossLootChances_tooltip = "Comma-separated drop chances (0-100) for each boss loot item",
-    Sandbox_ZMTankLootChances = "Tank Loot Item Chances",
-    Sandbox_ZMTankLootChances_tooltip = "Comma-separated drop chances (0-100) for each tank loot item",
+
+	Sandbox_ScreamerModII_BashChance = "Screamer Bash Chance",
+	Sandbox_ScreamerModII_BashChance_tooltip = "Set to 0 to turn feature off",
+
+	Sandbox_ScreamerModII_DropHandItemChance = "Drop Hand Item Chance",
+	Sandbox_ScreamerModII_DropHandItemChance_tooltip = "Drops Hand Item Chance When Bashed. Set to 0 to turn feature off.",
+
+	Sandbox_ScreamerModII_InjuryChance = "Injury Chance",
+	Sandbox_ScreamerModII_InjuryChance_tooltip = "Chance To Get Fractured When Bashed. Set to 0 to turn feature off.",
+
+	Sandbox_ScreamerModII_CanKill = "Screamer Can Instant Kill",
+	Sandbox_ScreamerModII_CanKill_tooltip = "Screamer Kills The Target When It Lands A Critical Hit",
+
+	Sandbox_ScreamerModII_MinDmg = "Minimum Damage",
+	Sandbox_ScreamerModII_MinDmg_tooltip = "Screamer Minimum Normal Attack Damage",
+
+	Sandbox_ScreamerModII_MaxDmg = "Maximum Damage",
+	Sandbox_ScreamerModII_MaxDmg_tooltip = "Screamer Maximum  Normal Attack Damage",
+
+	Sandbox_ScreamerModII_ZedKnock = "Zombie Knockdown",
+	Sandbox_ScreamerModII_ZedKnock_tooltip = "Screamer Can Knockdown Other Zombies",
+
+	Sandbox_ScreamerModII_CarHit = "Car Hit",
+	Sandbox_ScreamerModII_CarHit_tooltip = "Screamer Deals Impact To Vehicles and Passengers",
+
+	Sandbox_ScreamerModII_CarCrawl = "Car Crawl",
+	Sandbox_ScreamerModII_CarHit_tooltip = "Screamer Will Crawl Under Vehicles",
+
+	Sandbox_ScreamerModII_VictorySfx = "Play Victory Sound Effects",
+
+    Sandbox_ScreamerModII_1 = "Screamer 1",
+	Sandbox_ScreamerModII_1_SpawnLimit = "Screamer 1 Spawn Limit",
+	Sandbox_ScreamerModII_1_SpawnLimit_tooltip = "THIS IS AN EXPERIMENTAL FEATURE",
+	Sandbox_ScreamerModII_1_SpawnRate = "Screamer 1 Spawn Rate",
+	Sandbox_ScreamerModII_1_HP = "Screamer 1 Health",
+	Sandbox_ScreamerModII_1_Multiplier = "Screamer 1 Armor Multiplier",
+	Sandbox_ScreamerModII_1_LootRate = "Screamer 1 Loot Rate",
+	Sandbox_ScreamerModII_1_DropList = "Screamer 1 Drop List",
+	Sandbox_ScreamerModII_1_DropList_tooltip  = "Items that might spawn whenever Screamer 1 Dies. Use ; as delimiter",
+
+    Sandbox_ScreamerModII_2 = "BindHunter",
+	Sandbox_ScreamerModII_2_SpawnLimit = "BindHunter Spawn Limit",
+	Sandbox_ScreamerModII_2_SpawnLimit_tooltip = "THIS IS AN EXPERIMENTAL FEATURE",
+	Sandbox_ScreamerModII_2_SpawnRate = "BindHunter Spawn Rate",
+	Sandbox_ScreamerModII_2_HP = "BindHunter Health",
+	Sandbox_ScreamerModII_2_Multiplier = "BindHunter Armor Multiplier",
+	Sandbox_ScreamerModII_2_LootRate = "BindHunter Loot Rate",
+	Sandbox_ScreamerModII_2_DropList = "BindHunter Drop List",
+	Sandbox_ScreamerModII_2_DropList_tooltip  = "Items that might spawn whenever BindHunter Dies. Use ; as delimiter",
+
+    Sandbox_ScreamerModII_Add = "Add Korean PZ Server - Specific Options",
+    Sandbox_ScreamerModII_Add_Enable = "Enabled",
+	Sandbox_ScreamerModII_Add_Enable_tooltip = "Dont use these option if you are not Add Server",
+	Sandbox_ScreamerModII_Add_ServerMsg1 = "좀비 1 처치했습니다",
+	Sandbox_ScreamerModII_Add_ServerMsg2 = "좀비 2 처치했습니다",
+	Sandbox_ScreamerModII_Add_GeneralChatMessage = "General Chat Message",
+    Sandbox_ScreamerModII_Add_ServerImg = "Show Server Image"
+
 }
+
+
+

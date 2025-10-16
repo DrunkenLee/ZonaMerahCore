@@ -10,3 +10,230 @@ ZMEquipmentHandler.isRestrictedGearAllowed(username, itemType) -- returns true i
 
 // showMedicalDetailUI()
 // ZM_MedicalCheck.checkMedicalStatus(getPlayer())
+
+
+print(ZMKillcountHandler.getKillCount(getPlayer()))
+
+
+
+
+
+PlayerFlagHandler.giveFlag("godmod_allow", true)
+PlayerFlagHandler.giveFlag("godmod_allow", false)
+
+PlayerFlagHandler.getFlag("godmode_allow")
+
+
+PlayerFlagHandler.setFlagOnPlayer("tester1", "godmode_allow", false)
+PlayerFlagHandler.setFlagOnPlayer("tester1", "godmode_allow", true)
+
+
+
+
+getPlayer():setHoursSurvived(123123)
+getPlayer():setZombieKills(123123)
+
+
+
+print(ZMKillcountHandler.getRavenCreekKillCount(getPlayer()))
+print(ZMKillcountHandler.getKillCount(getPlayer()))
+
+PlayerTierHandler.improveGloves(getPlayer())
+
+
+
+------------------------------------ EXAMPLE ZED HANDLER ------------------------------------
+-- Spawn single zombies
+ZM_ZombieHandler.consoleSpawnZombie("ScreamerII", 10)
+ZM_ZombieHandler.consoleSpawnZombie("runner", 3)
+ZM_ZombieHandler.consoleSpawnZombie("tank", 1)
+ZM_ZombieHandler.consoleSpawnZombie("boss", 1)
+
+-- List available types
+ZM_ZombieHandler.listZombieTypes()
+
+-- Spawn at specific coordinates
+ZM_ZombieHandler.spawnZombieAtCoords(1393, 4989, 0, "screamer2", 5)
+
+
+
+-- Spawn horde of specific zombie types
+ZM_ZombieHandler.consoleSpawnHorde(10, 5, false, nil, "screamer1")
+ZM_ZombieHandler.consoleSpawnHorde(15, 8, false, nil, "tank")
+ZM_ZombieHandler.consoleSpawnHorde(20, 100, true, "tester2", "elite")
+
+-- With variety enabled (only works with "horde" type)
+ZM_ZombieHandler.consoleSpawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety, safeRadius)
+ZM_ZombieHandler.consoleSpawnHorde(300, 50, true, getPlayer():getUsername(), "elite", false, 30) -- Mixed horde with variety
+
+MakeWorldSound(getPlayer(), 100, 100)
+
+ZM_ZombieHandler.consoleSpawnZombie("elite", 10, 10)
+ZM_ZombieHandler.consoleSpawnZombie("tank", 200, 70)
+
+servermsg "i think we have 3 minutes to check the defences!"
+
+/servermsg "here they come again!"
+-------------------------------------- EXAMPLE ZED HANDLER SERVER ------------------------------------
+
+
+
+
+
+
+
+
+
+
+------------------------------------- SERVER WIDE FLAG -----------------------------------------------
+-- Get flags (from client cache)
+ZMServerwideFlagHandler.consoleGetFlag("supplyRunAvailableFlag")
+
+ZMServerwideFlagHandler.setFlag("supplyRunAvailableFlag", 1, true)
+ZMServerwideFlagHandler.setFlag("supplyRunCompleted", 0, false)
+ZMServerwideFlagHandler.consoleSetFlag("supplyRunAvailableFlag", 1)
+ZMServerwideFlagHandler.consoleSetFlag("supplyRunTakenBy", "Jeremy Boddy")
+-- List all flags
+ZMServerwideFlagHandler.consoleListFlags()
+
+-- Check as boolean
+print(ZMServerwideFlagHandler.getFlagBool("supplyRunAvailableFlag"))
+
+ZMServerwideFlagHandler.getFlagBoolDirect("supplyRunAvailableFlag", function(result)
+    print("Supply run available: " .. tostring(result))
+end)
+
+
+-- Getting values with type safety
+local message = ZMServerwideFlagHandler.getFlagString("serverMessage", "Default message")
+local playerCount = ZMServerwideFlagHandler.getFlagNumber("maxPlayers", 32)
+local isEventActive = ZMServerwideFlagHandler.getFlagBool("eventActiveFlag")
+
+------------------------------------- SERVER WIDE FLAG -----------------------------------------------
+
+
+
+
+------------------------------------- CUSTOM SAFEHOUSE MANAGEMENT -----------------------------------------------
+
+checkPlayerSafehouse("tester1")
+
+local playerObj = getSpecificPlayer(0)
+local safehouse = SafeHouse.getSafeHouse(playerObj:getSquare())
+if safehouse and safehouse:isOwner(playerObj) then
+    addPlayerToSafehouseViaInvite(safehouse, playerObj, "OtherPlayerUsername")
+else
+    print("You must be in your safehouse and be the owner to invite players")
+end
+
+invitePlayerToNamedSafehouse("Safehouse", "OtherPlayerUsername")
+
+
+// CREATE CUSTOM SAFEHOUSE
+setSafehouseData("ZM_PARTY", "tester1", 0, 0, 0, 8)
+
+
+// INVITE PLAYER TO SAFEHOUSE
+local safehouseName = "ZM_PARTY"
+local safehouse = findSafehouseByTitle(safehouseName)
+if safehouse then
+    local hostName = safehouse:getOwner() or "Unknown Host"
+    ISSafehouseUI.ReceiveSafehouseInviteZMPARTY(safehouse, hostName)
+    print("Forced safehouse invitation from: " .. hostName .. " for safehouse: " .. safehouseName)
+else
+    print("Safehouse '" .. safehouseName .. "' not found")
+end
+
+
+// KICK PLAYER FROM SAFEHOUSE
+removePlayerFromSafehouse("ZM_PARTY", "tester2")
+
+// RELEASE SAFEHOUSE
+forceReleaseSafehouse("ZM_PARTY")
+
+
+------------------------------------- CUSTOM SAFEHOUSE MANAGEMENT -----------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------ MINI HORDE SPAWNER ------------------------------------
+Scheduled Checks: Call
+ZM_MiniHordeSpawner.checkAllHordeZones()
+
+Individual Zone Checks:
+
+ZM_MiniHordeSpawner.checkHordeZone1() - Check only Horde Zone 1
+ZM_MiniHordeSpawner.checkHordeZone2() - Check only Horde Zone 2
+Manual Triggers:
+
+ZM_MiniHordeSpawner.triggerHorde(1) - Manually trigger Horde 1
+ZM_MiniHordeSpawner.triggerHorde(2) - Manually trigger Horde 2
+
+
+-- Spawn Psycho1 zombies in a specific zone
+
+spawnDayPsycho()
+spawnNightPsycho()
+spawnDayPsychoDown()
+
+-- Spawn at coordinates
+spawnPsychoAt(10500, 9000, 0, 'Psycho1', false)  -- Day Psycho at coordinates
+spawnPsychoAt(10500, 9000, 0, 'Psycho2', true)   -- Night Psycho knocked down
+
+------------------------------------ MINI HORDE SPAWNER ------------------------------------
+
+
+
+
+
+
+------------------------------------ EXAMPLE USAGE CHECK PLAYER IN ISO ZONE ------------------------------------
+-- Get all players in Horde Zone 1
+local playersInZone1 = ZM_MiniHordeSpawner.getPlayersInHordeZone1()
+for _, username in ipairs(playersInZone1) do
+    print("Player in Zone 1: " .. username)
+end
+
+-- Get detailed information about all players in isolation zones
+local playersInAllZones = ZM_MiniHordeSpawner.getAllPlayersInIsolationZones()
+for _, playerData in ipairs(playersInAllZones) do
+    print("Player: " .. playerData.username .. " is in " .. playerData.zone)
+end
+
+-- Check if any players are in zones
+if ZM_MiniHordeSpawner.hasPlayersInIsolationZones() then
+    print("Players detected in isolation zones!")
+end
+
+-- Get player counts
+local counts = ZM_MiniHordeSpawner.getZonePlayerCounts()
+print("Zone 1: " .. counts.Horde1 .. " players")
+print("Zone 2: " .. counts.Horde2 .. " players")
+print("Total: " .. counts.Total .. " players")
+
+-- Print detailed status
+ZM_MiniHordeSpawner.printZoneStatus()
+
+-- Get complete zone status data
+local status = ZM_MiniHordeSpawner.getZoneStatus()
+------------------------------------ EXAMPLE USAGE CHECK PLAYER IN ISO ZONE ------------------------------------
+
+sendClientCommand("ZM_TreeSpawner","FillArea",{ x1=19539,y1=15613,x2=19548,y2=15620,z=0,density=20 })
+
+ZM_TreeSpawnerClient.fillArea(19539, 15613, 19548, 15620, 0, 20)
+
+
+
+// remove zed vanilla 1 chunk
+SendCommandToServer(string.format("/removezombies -remove true"))

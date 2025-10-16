@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<animNode>
+	<m_Name>Screamereating</m_Name>
+	<!--<m_AnimName>Screamer_IdleEating</m_AnimName>-->
+	<m_AnimName>Screamer_IdleEating_OnKnees</m_AnimName>
+
+	<m_deferredBoneAxis>Y</m_deferredBoneAxis>
+	<m_SyncTrackingEnabled>false</m_SyncTrackingEnabled>
+	<m_SpeedScale>EatSpeed</m_SpeedScale>
+	<m_BlendTime>0.50</m_BlendTime>
+	<m_Conditions>
+		<m_Name>EatingStarted</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_BoolValue>true</m_BoolValue>
+	</m_Conditions>
+	<m_Conditions>
+		<m_Name>isScreamerII</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_BoolValue>true</m_BoolValue>
+	</m_Conditions>
+</animNode>

@@ -74,6 +74,24 @@ ZM_ZombieHandler.ZombieTypes = {
         outfit = "Injured",
         profession = "Unemployed",
         isCrawler = true
+    },
+    ["screamer1"] = {
+        health = 180,
+        strength = 4,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Screamer1",
+        profession = "Unemployed"
+    },
+    ["screamer2"] = {
+        health = 200,
+        strength = 5,
+        fitness = 4,
+        walkType = "sprint2",
+        canSprint = true,
+        outfit = "Screamer2",
+        profession = "Unemployed"
     }
 }
 
@@ -235,12 +253,64 @@ function ZM_ZombieHandler.consoleSpawnHorde(count, radius, isTargeted, targetUse
     return ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety, safeRadius)
 end
 
+-- Function to open the Zombie Spawner UI
+function ZM_ZombieHandler.openUI()
+    if openZombieSpawnerUI then
+        openZombieSpawnerUI()
+    else
+        print("Error: Zombie Spawner UI not loaded. Make sure ZM_ZombieSpawnerUI.lua is loaded.")
+    end
+end
+
 -- Function to check zombie types
 function ZM_ZombieHandler.listZombieTypes()
     print("Available zombie types:")
     for zombieType, data in pairs(ZM_ZombieHandler.ZombieTypes) do
         print("  " .. zombieType .. " - Health: " .. data.health .. ", Strength: " .. data.strength .. ", Walk: " .. data.walkType)
     end
+end
+
+-- Client-side debug functions to trigger server-side checks
+function ZM_ZombieHandler.checkLootSettings()
+    local player = getPlayer()
+    if not player then
+        print("Error: No player found")
+        return false
+    end
+
+    sendClientCommand("ZM_ZombieHandler", "checkLootSettings", {
+        username = player:getUsername()
+    })
+    print("Requesting loot settings check from server...")
+    return true
+end
+
+function ZM_ZombieHandler.testLootCalculation()
+    local player = getPlayer()
+    if not player then
+        print("Error: No player found")
+        return false
+    end
+
+    sendClientCommand("ZM_ZombieHandler", "testLootCalculation", {
+        username = player:getUsername()
+    })
+    print("Requesting loot calculation test from server...")
+    return true
+end
+
+function ZM_ZombieHandler.checkSandboxStatus()
+    local player = getPlayer()
+    if not player then
+        print("Error: No player found")
+        return false
+    end
+
+    sendClientCommand("ZM_ZombieHandler", "checkSandboxStatus", {
+        username = player:getUsername()
+    })
+    print("Requesting sandbox status check from server...")
+    return true
 end
 
 -- Add zombie spawn options to player context menu

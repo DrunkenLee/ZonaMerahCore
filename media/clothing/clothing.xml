@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<outfitManager>
+	<m_FemaleOutfits>
+		<m_Name>Screamer1</m_Name>
+		<m_Guid>83b29789-2975-42fd-9aaf-105e06e7378b</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_items>
+			<itemGUID>d7440306-5bb4-40c6-8ebe-8a498a05b8e1</itemGUID>
+		</m_items>
+	</m_FemaleOutfits>
+	<m_MaleOutfits>
+		<m_Name>Screamer1</m_Name>
+		<m_Guid>86ab8906-93e6-4c4c-8f39-eca27d1d7f85</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_items>
+			<itemGUID>d7440306-5bb4-40c6-8ebe-8a498a05b8e1</itemGUID>
+		</m_items>
+	</m_MaleOutfits>
+
+
+	<m_FemaleOutfits>
+		<m_Name>Screamer2</m_Name>
+		<m_Guid>268795fa-f065-42cf-9153-0eb8454531e9</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_items>
+			<itemGUID>5fc6bc07-4bda-41d2-aa26-7d91cd0f0938</itemGUID>
+		</m_items>
+	</m_FemaleOutfits>
+	<m_MaleOutfits>
+		<m_Name>Screamer2</m_Name>
+		<m_Guid>bb768f69-808a-4c6f-963e-a6a27e1c7e1c</m_Guid>
+		<m_Top>false</m_Top>
+		<m_Pants>false</m_Pants>
+		<m_items>
+			<itemGUID>5fc6bc07-4bda-41d2-aa26-7d91cd0f0938</itemGUID>
+		</m_items>
+	</m_MaleOutfits>
+</outfitManager>
+

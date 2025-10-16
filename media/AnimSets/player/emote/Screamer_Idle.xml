@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<animNode x_extends="looped.xml">
+	<m_Name>ScreamerPose</m_Name>
+	<m_AnimName>Screamer_Pose</m_AnimName>
+	<m_Conditions>
+		<m_StringValue>ScreamerPose</m_StringValue>
+	</m_Conditions>
+	<m_SpeedScale>0.80</m_SpeedScale>
+
+	<m_deferredBoneAxis>Y</m_deferredBoneAxis>
+	<m_SyncTrackingEnabled>false</m_SyncTrackingEnabled>
+	<m_SubStateBoneWeights>
+		<boneName>Dummy01</boneName>
+	</m_SubStateBoneWeights>
+	<m_SubStateBoneWeights>
+		<boneName>Translation_Data</boneName>
+	</m_SubStateBoneWeights>
+
+    <m_Conditions>
+		<m_Name>isWearingScreamerII</m_Name>
+		<m_Type>BOOL</m_Type>
+		<m_BoolValue>true</m_BoolValue>
+	</m_Conditions>
+
+</animNode>

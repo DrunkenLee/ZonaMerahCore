@@ -240,7 +240,7 @@ function PlayerTierHandler.addAdminMenu(playerIndex, context)
             submenu:addOption("Set Tier for " .. username),
             subSubMenu
         )
-        PlayerTierHandler.addTierOptionsToMenu(subSubMenu, admin, player)
+        -- PlayerTierHandler.addTierOptionsToMenu(subSubMenu, admin, player)
     end
 end
 
@@ -254,7 +254,7 @@ function PlayerTierHandler.updateTierAndGiveXPBoost(player)
 
   if tier == "Godlike" then
     player:setUnlimitedEndurance(true)
-    player:Say("You are already at the highest tier: " .. tier)
+    player:Say("You are already at the godlike tier: " .. tier)
   end
 
   sendClientCommand("PlayerTierHandler", "setUnlimitedEnduranceAndTrait", { username = player:getUsername() })
@@ -325,7 +325,12 @@ function PlayerTierHandler.giveXPBoost(player)
       bonusMultiplier = 1.3 -- 30% speed boost
       xpMultiplier = 1.75 -- 75% XP boost
       message = "Godlike Bonus Applied (+30% Speed, +75% XP)"
+  elseif tier == "Beyond Godlike" then
+      bonusMultiplier = 1.5
+      xpMultiplier = 2
+      message = "Beyond Godlike Bonus Applied (+50% Speed, +100% XP)"
   end
+
 end
 
 function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
@@ -430,6 +435,13 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
       newTier = "Godlike"
       newTierValue = 8
       -- CharacterManager.instance:addFlag("godlikeTier")
+  end
+
+  if (survivalDays > 15 and zombieKills >= 200000) then
+      newTier = "Beyond Godlike"
+      newTierValue = 9
+      ZMEquipmentHandler.setRestrictedGearAllow(getPlayer():getUsername(), "Base.BF2042Antivirus", true)
+      -- CharacterManager.instance:addFlag("beyondGodlikeTier")
   end
 
   -- We still check minimum tier requirements as a safety measure

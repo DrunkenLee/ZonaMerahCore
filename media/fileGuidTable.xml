@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fileGuidTable>
+	<files>
+		<path>media/clothing/clothingItems/Screamer1.xml</path>
+		<guid>d7440306-5bb4-40c6-8ebe-8a498a05b8e1</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/Screamer2.xml</path>
+		<guid>5fc6bc07-4bda-41d2-aa26-7d91cd0f0938</guid>
+	</files>
+</fileGuidTable>

@@ -140,8 +140,25 @@ ZMEquipmentHandler.restrictedGearTypes = {
   ["Base.ada_wong"] = true,
   ["Base.fbi"] = true,
   ["Base.swat"] = true,
-  ["Base.2B"] = true
+  ["Base.Art_Of_Clown"] = true,
+  ["Base.BF2042Antivirus"] = true,
+  ["Base.2B"] = true,
+  ["Base.Taiho"] = true,
+  ["Base.Domestic_Cunt"] = true,
+  ["Base.Horned_Slut"] = true,
+  ["Base.frog"] = true,
+  ["Base.GI_Klee"] = true,
+  ["Base.Giyu"] = true,
+  ["Base.GoKu"] = true,
+  ["Base.King"] = true,
+  ["Base.klukai_Girls_Frontline"] = true,
+  ["Base.Nexus"] = true,
+  ["Base.Nezuko"] = true,
+  ["Base.Manusia"] = true,
+  ["Exclusive.Silver_Wolf"] = true,
+  ["Stranger.Stranger"] = true
 }
+
 
 function ZMEquipmentHandler.logRestrictedGear(player, itemType)
   if player and itemType then
@@ -240,6 +257,25 @@ end
 -- This function runs when clothing changes
 function ZMEquipmentHandler.onClothingUpdated(player)
     if not ZMEquipmentHandler.restrictExoSkeleton then return end
+    ZMEquipmentHandler.setRestrictedGearAllow("inzhani", "Base.Art_Of_Clown", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Jah", "Base.BF2042Antivirus", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Jillian", "Base.BF2042Antivirus", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("MarioneLaplusX", "Base.Taiho", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Benihana", "Base.Domestic_Cunt", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Neon", "Base.Horned_Slut", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Noen", "Base.Horned_Slut", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Jah", "Base.Giyu", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Flow", "Base.frog", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Swiper", "Base.GI_Klee", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Goku", "Base.GoKu", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("inzhani", "Base.King", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Aruuto", "Base.klukai_Girls_Frontline", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Lenka", "Base.Nexus", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Vefulz", "Base.Nezuko", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("CowboyTanaka", "Base.Manusia", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Yuu", "Exclusive.Silver_Wolf", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Stranger", "Stranger.Stranger", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("admin", "Base.swat", true)
 
     local inventory = player:getInventory()
     local wornItems = player:getWornItems()
@@ -421,7 +457,25 @@ end
 -- Initialize restricted gear permissions
 function ZMEquipmentHandler.initializeRestrictedGearPermissions()
     -- Allow specific users to equip restricted items
-    ZMEquipmentHandler.setRestrictedGearAllow("inzhani", "Base.2B", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("inzhani", "Base.Art_Of_Clown", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Jah", "Base.BF2042Antivirus", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Jillian", "Base.BF2042Antivirus", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("MarioneLaplusX", "Base.Taiho", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Benihana", "Base.Domestic_Cunt", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Neon", "Base.Horned_Slut", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Noen", "Base.Horned_Slut", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Jah", "Base.Giyu", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Flow", "Base.frog", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Swiper", "Base.GI_Klee", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Goku", "Base.GoKu", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("inzhani", "Base.King", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Aruuto", "Base.klukai_Girls_Frontline", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Lenka", "Base.Nexus", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Vefulz", "Base.Nezuko", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("CowboyTanaka", "Base.Manusia", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Yuu", "Exclusive.Silver_Wolf", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Stranger", "Stranger.Stranger", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("admin", "Base.swat", true)
 end
 
 -- Call initialization when the module loads
