@@ -25,7 +25,7 @@ function timer:Create(name, delay, repetitions, func)
     assert(type(delay) == "number", "Delay of timer should be a number type")
     assert(type(repetitions) == "number", "Repetitions of timer should be a number type")
     assert(type(func) == "function", "Func of timer should be a function type (lol)")
-    
+
     self.Timers[name] = {
         Delay = delay,
         StartRepetitions = repetitions,
@@ -63,7 +63,7 @@ local function timerUpdate()
 end
 
 -- FIXED: pakai OnTick biar kompatibel
-Events.OnTick.Add(timerUpdate)
+-- Events.OnTick.Add(timerUpdate)
 
 function timer:Remove(name)
     local t = self.Timers[name]

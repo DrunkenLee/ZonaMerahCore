@@ -20,60 +20,6 @@ end
 
 -- Zombie type definitions (same as client)
 ZM_ZombieHandlerServer.ZombieTypes = {
-    ["normal"] = {
-        health = 150,
-        strength = 1,
-        fitness = 1,
-        walkType = "shamble",
-        canSprint = false,
-        outfit = "Naked",
-        profession = "Unemployed"
-    },
-    ["runner"] = {
-        health = 80,
-        strength = 2,
-        fitness = 3,
-        walkType = "sprint1",
-        canSprint = true,
-        outfit = "Survivalist",
-        profession = "Survivalist"
-    },
-    ["tank"] = {
-        health = 200,
-        strength = 5,
-        fitness = 2,
-        walkType = "shamble",
-        canSprint = false,
-        outfit = "Police",
-        profession = "Police"
-    },
-    ["sprinter"] = {
-        health = 200,
-        strength = 100,
-        fitness = 5,
-        walkType = "sprint2",
-        canSprint = true,
-        outfit = "ArmyCamoDesert",
-        profession = "Soldier"
-    },
-    ["boss"] = {
-        health = 200,
-        strength = 8,
-        fitness = 6,
-        walkType = "sprint1",
-        canSprint = true,
-        outfit = "Police",
-        profession = "Police"
-    },
-    ["horde"] = {
-        health = 150,
-        strength = 1,
-        fitness = 2,
-        walkType = "shamble",
-        canSprint = false,
-        outfit = "Naked",
-        profession = "Unemployed"
-    },
     ["elite"] = {
         health = 200,
         strength = 100,
@@ -92,16 +38,6 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         outfit = "ArmyCamoDesert",
         profession = "Soldier"
     },
-    ["crawler"] = {
-        health = 50,
-        strength = 1,
-        fitness = 1,
-        walkType = "crawl",
-        canSprint = false,
-        outfit = "Injured",
-        profession = "Unemployed",
-        isCrawler = true
-    },
     ["screamer1"] = {
         health = 150,
         strength = 20,
@@ -118,6 +54,24 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         walkType = "sprint2",
         canSprint = true,
         outfit = "Screamer2",
+        profession = "Unemployed"
+    },
+    ["psycho1"] = {
+        health = 180,
+        strength = 50,
+        fitness = 4,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Psycho1",
+        profession = "Unemployed"
+    },
+    ["psycho2"] = {
+        health = 200,
+        strength = 60,
+        fitness = 4,
+        walkType = "sprint2",
+        canSprint = true,
+        outfit = "Psycho2",
         profession = "Unemployed"
     }
 }
@@ -270,7 +224,7 @@ function ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
     local lootTables = {}
 
     -- Elite zombie loot
-    local eliteItems = parseCommaString(getSandboxVar("ZMEliteLootItems", nil), {"Base.Axe", "Base.9mmClip", "Base.Bullets9mm"})
+    local eliteItems = parseCommaString(getSandboxVar("ZMEliteLootItems", nil), {""})
     local eliteQuantities = parseCommaNumbers(getSandboxVar("ZMEliteLootQuantities", nil), {1, 2, 15})
     local eliteChances = parseCommaNumbers(getSandboxVar("ZMEliteLootChances", nil), {100, 80, 90})
     local eliteMaxItems = getSandboxVar("ZMEliteMaxItems", 3)
@@ -289,38 +243,6 @@ function ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
     end
     lootTables["elite"] = eliteLootTable
     lootTables["elite2"] = eliteLootTable -- Same loot for elite2
-
-    -- Boss zombie loot
-    local bossItems = parseCommaString(getSandboxVar("ZMBossLootItems", nil), {"Base.Katana", "Base.ShotgunShells", "Base.FirstAidKit"})
-    local bossQuantities = parseCommaNumbers(getSandboxVar("ZMBossLootQuantities", nil), {1, 10, 1})
-    local bossChances = parseCommaNumbers(getSandboxVar("ZMBossLootChances", nil), {100, 90, 70})
-    local bossMaxItems = getSandboxVar("ZMBossMaxItems", 3)
-
-    local bossLootTable = {}
-    for i, item in ipairs(bossItems) do
-        bossLootTable[#bossLootTable + 1] = {
-            item = item,
-            quantity = math.max(1, math.floor((bossQuantities[i] or 1) * lootMultiplier)),
-            chance = bossChances[i] or 100
-        }
-    end
-    lootTables["boss"] = bossLootTable
-
-    -- Tank zombie loot
-    local tankItems = parseCommaString(getSandboxVar("ZMTankLootItems", nil), {"Base.Sledgehammer", "Base.Pills"})
-    local tankQuantities = parseCommaNumbers(getSandboxVar("ZMTankLootQuantities", nil), {1, 2})
-    local tankChances = parseCommaNumbers(getSandboxVar("ZMTankLootChances", nil), {60, 50})
-    local tankMaxItems = getSandboxVar("ZMTankMaxItems", 2)
-
-    local tankLootTable = {}
-    for i, item in ipairs(tankItems) do
-        tankLootTable[#tankLootTable + 1] = {
-            item = item,
-            quantity = math.max(1, math.floor((tankQuantities[i] or 1) * lootMultiplier)),
-            chance = tankChances[i] or 100
-        }
-    end
-    lootTables["tank"] = tankLootTable
 
     -- Screamer1 zombie loot
     local screamer1Items = parseCommaString(getSandboxVar("ZMScreamer1LootItems", nil), {"RMWeapons.SoulThread", "RMWeapons.OblivionCore", "RMWeapons.PhoenixFeather", "RMWeapons.CelestialFragment", "RMWeapons.ApocalypseRelic", "RMWeapons.HeartOfRedZone"})
@@ -354,6 +276,38 @@ function ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
     end
     lootTables["screamer2"] = screamer2LootTable
 
+    -- Psycho1 zombie loot
+    local psycho1Items = parseCommaString(getSandboxVar("ZMPsycho1LootItems", nil), {"Base.Knife"})
+    local psycho1Quantities = parseCommaNumbers(getSandboxVar("ZMPsycho1LootQuantities", nil), {1, 1})
+    local psycho1Chances = parseCommaNumbers(getSandboxVar("ZMPsycho1LootChances", nil), {50, 50})
+    local psycho1MaxItems = getSandboxVar("ZMPsycho1MaxItems", 1)
+
+    local psycho1LootTable = {}
+    for i, item in ipairs(psycho1Items) do
+        psycho1LootTable[#psycho1LootTable + 1] = {
+            item = item,
+            quantity = math.max(1, math.floor((psycho1Quantities[i] or 1) * lootMultiplier)),
+            chance = psycho1Chances[i] or 100
+        }
+    end
+    lootTables["psycho1"] = psycho1LootTable
+
+    -- Psycho2 zombie loot
+    local psycho2Items = parseCommaString(getSandboxVar("ZMPsycho2LootItems", nil), {"Base.Knife"})
+    local psycho2Quantities = parseCommaNumbers(getSandboxVar("ZMPsycho2LootQuantities", nil), {1, 1, 1})
+    local psycho2Chances = parseCommaNumbers(getSandboxVar("ZMPsycho2LootChances", nil), {60, 60, 40})
+    local psycho2MaxItems = getSandboxVar("ZMPsycho2MaxItems", 1)
+
+    local psycho2LootTable = {}
+    for i, item in ipairs(psycho2Items) do
+        psycho2LootTable[#psycho2LootTable + 1] = {
+            item = item,
+            quantity = math.max(1, math.floor((psycho2Quantities[i] or 1) * lootMultiplier)),
+            chance = psycho2Chances[i] or 100
+        }
+    end
+    lootTables["psycho2"] = psycho2LootTable
+
     local lootTable = lootTables[zombieType]
     if not lootTable then return end
 
@@ -361,20 +315,17 @@ function ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
     local maxItems = 999 -- Default to unlimited
     if zombieType == "elite" or zombieType == "elite2" then
         maxItems = eliteMaxItems
-    elseif zombieType == "boss" then
-        maxItems = bossMaxItems
-    elseif zombieType == "tank" then
-        maxItems = tankMaxItems
     elseif zombieType == "screamer1" then
         maxItems = screamer1MaxItems
     elseif zombieType == "screamer2" then
         maxItems = screamer2MaxItems
+    elseif zombieType == "psycho1" then
+        maxItems = psycho1MaxItems
+    elseif zombieType == "psycho2" then
+        maxItems = psycho2MaxItems
     end
 
-    -- Store loot data directly on the zombie object
-    zombie:getModData().ZM_LootTable = {}
-    zombie:getModData().ZM_ZombieType = zombieType
-
+    -- Store loot data directly on the zombie object (but don't set ZM_ZombieType here)
     -- Use the new random selection logic
     local selectedLoot = selectRandomLoot(lootTable, maxItems)
     zombie:getModData().ZM_LootTable = selectedLoot
@@ -399,16 +350,6 @@ ZM_ZombieHandlerServer.checkLootSettings = function()
     -- print("Elite Quantities: " .. (SandboxVars.ZMEliteLootQuantities or "default"))
     -- print("Elite Chances: " .. (SandboxVars.ZMEliteLootChances or "default"))
     -- print("Elite Max Items: " .. (SandboxVars.ZMEliteMaxItems or "default"))
-    -- print("")
-    -- print("Boss Items: " .. (SandboxVars.ZMBossLootItems or "default"))
-    -- print("Boss Quantities: " .. (SandboxVars.ZMBossLootQuantities or "default"))
-    -- print("Boss Chances: " .. (SandboxVars.ZMBossLootChances or "default"))
-    -- print("Boss Max Items: " .. (SandboxVars.ZMBossMaxItems or "default"))
-    -- print("")
-    -- print("Tank Items: " .. (SandboxVars.ZMTankLootItems or "default"))
-    -- print("Tank Quantities: " .. (SandboxVars.ZMTankLootQuantities or "default"))
-    -- print("Tank Chances: " .. (SandboxVars.ZMTankLootChances or "default"))
-    -- print("Tank Max Items: " .. (SandboxVars.ZMTankMaxItems or "default"))
     -- print("")
     -- print("Screamer1 Items: " .. (SandboxVars.ZMScreamer1LootItems or "default"))
     -- print("Screamer1 Quantities: " .. (SandboxVars.ZMScreamer1LootQuantities or "default"))
@@ -492,27 +433,60 @@ ZM_ZombieHandlerServer.onZombieDeath = function(zombie)
 
     local modData = zombie:getModData()
 
-    -- Check if this is one of our special zombies and recalculate loot based on current settings
-    if modData and modData.ZM_ZombieType then
-        local zombieType = modData.ZM_ZombieType
-        -- print("Recalculating loot for " .. zombieType .. " zombie based on current settings")
-
-        -- Clear old loot table and recalculate with current settings
-        modData.ZM_LootTable = nil
-        ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
-
-        -- Use the newly calculated loot table
-        modData = zombie:getModData()
+    -- CRITICAL: ONLY process zombies that have the ZM_ZombieType flag set
+    -- This flag is ONLY set in createZombie() for special zombies (elite, screamer, etc.)
+    -- Normal zombies should NEVER have this flag, so they won't drop any special loot
+    if not modData or not modData.ZM_ZombieType then
+        -- This is not one of our special zombies, skip loot processing
+        return
     end
 
-    if modData and modData.ZM_LootTable then
+    local zombieType = modData.ZM_ZombieType
+
+    -- Verify this is a valid zombie type that should have loot
+    if not ZM_ZombieHandlerServer.ZombieTypes[zombieType] then
+        -- Invalid zombie type, skip
+        return
+    end
+
+    -- OUTFIT VALIDATION: Verify the zombie's outfit matches the expected outfit for this type
+    -- This prevents old/corrupted data from causing wrong loot drops
+    local zombieData = ZM_ZombieHandlerServer.ZombieTypes[zombieType]
+    local zombieOutfit = zombie:getOutfitName() or nil
+
+    if zombieOutfit ~= zombieData.outfit then
+        -- CRITICAL: Zombie has wrong outfit for this type!
+        -- This likely means it's an old zombie with corrupted data or a regular zombie
+        -- that somehow got tagged incorrectly. Clear the invalid data and don't drop loot.
+        print("[ZM_ZombieHandler] WARNING: Zombie has ZM_ZombieType='" .. zombieType ..
+              "' but outfit='" .. tostring(zombieOutfit) .. "' (expected '" .. zombieData.outfit ..
+              "'). Clearing invalid data.")
+        modData.ZM_ZombieType = nil
+        modData.ZM_LootTable = nil
+        return
+    end
+
+    -- Recalculate loot based on current sandbox settings
+    -- This ensures that any changes to loot settings after zombie spawned are applied
+    -- print("Recalculating loot for " .. zombieType .. " zombie based on current settings")
+
+    -- Clear old loot table and recalculate with current settings
+    -- Note: addItemsToZombie does NOT modify ZM_ZombieType, only prepares the loot table
+    modData.ZM_LootTable = nil
+    ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
+
+    -- Use the newly calculated loot table
+    modData = zombie:getModData()
+
+    -- Drop loot ONLY if we have a loot table AND a valid zombie type
+    if modData and modData.ZM_LootTable and modData.ZM_ZombieType then
         local square = zombie:getSquare()
         if square then
             for _, lootItem in ipairs(modData.ZM_LootTable) do
                 for i = 1, (lootItem.quantity or 1) do
                     square:AddWorldInventoryItem(lootItem.item, 0, 0, 0)
                 end
-                -- print("Dropped " .. lootItem.item .. " from " .. (modData.ZM_ZombieType or "unknown") .. " zombie")
+                -- print("Dropped " .. lootItem.item .. " from " .. zombieType .. " zombie")
             end
         end
     end
@@ -586,22 +560,16 @@ function ZM_ZombieHandlerServer.createZombie(square, zombieType)
         zombie:makeInactive(false)
     end
 
-    -- Additional configuration for special types
-    if zombieType == "boss" then
-        if zombie:getBodyDamage() then
-            zombie:getBodyDamage():setOverallBodyHealth(zombieData.health)
-            zombie:getBodyDamage():setInfectionLevel(0)
-        end
-    elseif zombieType == "tank" then
-        if zombie:getBodyDamage() then
-            zombie:getBodyDamage():setOverallBodyHealth(zombieData.health * 1.5)
-        end
-    elseif zombieType == "screamer1" or zombieType == "screamer2" then
+    -- Additional configuration for screamers
+    if zombieType == "screamer1" or zombieType == "screamer2" then
         -- zombie:setVariable("isScreamerII", true)
     end
 
-    -- ADD THIS LINE - Call the function to add loot to the zombie
+    -- Call the function to add loot to the zombie
     ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
+
+    -- IMPORTANT: Set the zombie type AFTER adding loot to mark this as a special zombie
+    zombie:getModData().ZM_ZombieType = zombieType
 
     return zombie
 end
@@ -628,14 +596,15 @@ end
 -- Function to spawn zombie at player location
 function ZM_ZombieHandlerServer.spawnZombieAtPlayer(player, args)
     -- Add admin check
-    if not player:isAccessLevel("admin") then
-        sendServerCommand(player, "ZM_ZombieHandler", "spawnError", {
-            error = "Only admins can spawn zombies"
-        })
+
+    local zombieType = args.zombieType or "elite"
+
+    -- Skip if it's a Psycho zombie - those are handled by PsychoZed mod on client side
+    if zombieType == "psycho1" or zombieType == "psycho2" then
+        -- print("[ZM_ZombieHandler] Skipping Psycho zombie spawn - handled by PsychoZed mod")
         return
     end
 
-    local zombieType = args.zombieType or "normal"
     local count = math.min(args.count or 1, 50) -- Limit to 50 zombies max
     local safeRadius = args.safeRadius or 0
     local spawnedCount = 0
@@ -686,14 +655,14 @@ end
 
 -- Function to spawn zombie at specific coordinates
 function ZM_ZombieHandlerServer.spawnZombieAtCoords(player, args)
-    if not player:isAccessLevel("admin") then
-        sendServerCommand(player, "ZM_ZombieHandler", "spawnError", {
-            error = "Only admins can spawn zombies"
-        })
+    local zombieType = args.zombieType or "elite"
+
+    -- Skip if it's a Psycho zombie - those are handled by PsychoZed mod on client side
+    if zombieType == "psycho1" or zombieType == "psycho2" then
+        -- print("[ZM_ZombieHandler] Skipping Psycho zombie spawn - handled by PsychoZed mod")
         return
     end
 
-    local zombieType = args.zombieType or "normal"
     local count = math.min(args.count or 1, 50)
     local spawnedCount = 0
 
@@ -717,13 +686,6 @@ end
 
 -- Modify the spawnHorde function to use safeRadius
 function ZM_ZombieHandlerServer.spawnHorde(player, args)
-    if not player:isAccessLevel("admin") then
-        sendServerCommand(player, "ZM_ZombieHandler", "spawnError", {
-            error = "Only admins can spawn zombies"
-        })
-        return
-    end
-
     local count = math.min(args.count or 10, 100) -- Limit to 100 zombies max for horde
     local radius = args.radius or 5
     local safeRadius = args.safeRadius or 0
@@ -732,7 +694,13 @@ function ZM_ZombieHandlerServer.spawnHorde(player, args)
     local targetPlayer = nil
     local spawnedCount = 0
     local failedCount = 0
-    local zombieType = args.zombieType or "horde"
+    local zombieType = args.zombieType or "elite"
+
+    -- Skip if it's a Psycho zombie - those are handled by PsychoZed mod on client side
+    if zombieType == "psycho1" or zombieType == "psycho2" then
+        -- print("[ZM_ZombieHandler] Skipping Psycho zombie horde spawn - handled by PsychoZed mod")
+        return
+    end
 
     -- Validate zombie type
     if not ZM_ZombieHandlerServer.ZombieTypes[zombieType] then
@@ -843,12 +811,6 @@ end
 
 -- Function to spawn boss zombie with minions
 function ZM_ZombieHandlerServer.spawnBossWithMinions(player, args)
-    if not player:isAccessLevel("admin") then
-        sendServerCommand(player, "ZM_ZombieHandler", "spawnError", {
-            error = "Only admins can spawn zombies"
-        })
-        return
-    end
 
     local spawnedCount = 0
 

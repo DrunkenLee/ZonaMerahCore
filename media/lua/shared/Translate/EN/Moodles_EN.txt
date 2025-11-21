@@ -1,0 +1,28 @@
+Moodles_EN {
+	-- Pumped Moodle - Shows combat readiness and adrenaline
+    -- Increases with zombie kills, provides visual feedback
+
+    -- Moodle level names
+    Moodles_Pumped_Good_lvl1 = "Little Pumped",
+    Moodles_Pumped_Good_lvl2 = "Moderately Pumped",
+    Moodles_Pumped_Good_lvl3 = "Very Pumped",
+    Moodles_Pumped_Good_lvl4 = "Extremely Pumped",
+
+    -- Moodle descriptions (shown on hover)
+    Moodles_Pumped_Good_desc_lvl1 = "Well, feeling a bit pumped. Recent combat has elevated your adrenaline. ( +1% speed! )",
+    Moodles_Pumped_Good_desc_lvl2 = "Getting Pumped Up! Your combat prowess is showing. ( +2% speed! )",
+    Moodles_Pumped_Good_desc_lvl3 = "Seriously Pumped! You're on a killing spree. ( +5% speed! )",
+    Moodles_Pumped_Good_desc_lvl4 = "Pumped to the Max! You're an unstoppable force! ( +10% speed! )",
+
+    -- Giant Ox Moodle - Increased carry capacity
+    Moodles_GiantOx_Good_lvl1 = "Giant Ox Strength",
+
+    -- Giant Ox description
+    Moodles_GiantOx_Good_desc_lvl1 = "You feel incredibly strong! Your carry capacity has been greatly increased. ( +1000 carry capacity )",
+
+    -- Oak Remedy Moodle - Weight normalized
+    Moodles_OakRemedy_Good_lvl1 = "Oak Remedy",
+
+    -- Oak Remedy description
+    Moodles_OakRemedy_Good_desc_lvl1 = "Your body weight has been normalized to a healthy level. ( Weight reset to 75kg )",
+}

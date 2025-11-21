@@ -42,6 +42,8 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
         return
     end
 
+
+
     local cheatsDetected = false
 
     -- Skip ghost mode check if within 1 minute of player creation
@@ -76,10 +78,27 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     end
 
     if playerObj:isUnlimitedCarry() then
-        ForceRegularPlayerZM.LogToServer(username, "Unlimited Carry", "Disabled automatically")
-        print("Unlimited Carry is enabled for player: " .. username)
-        playerObj:setUnlimitedCarry(false)
-        cheatsDetected = true
+        -- Whitelist: allow Unlimited Carry while Giant Ox buff is active
+        local md = playerObj:getModData()
+        local carryAllowedUntil = 0
+        if md and md.ZM_GiantOxEndMs then
+            carryAllowedUntil = tonumber(md.ZM_GiantOxEndMs) or 0
+        end
+
+        local allowUnlimitedCarryFlag = false
+        if PlayerFlagHandler and PlayerFlagHandler.getFlag then
+            allowUnlimitedCarryFlag = PlayerFlagHandler.getFlag("allow_unlimited_carry") == true
+        end
+
+        if allowUnlimitedCarryFlag or (carryAllowedUntil > getTimestampMs()) then
+            -- Skip disabling Unlimited Carry while whitelisted
+            -- print("Unlimited Carry allowed until " .. tostring(carryAllowedUntil) .. " for " .. username)
+        else
+            ForceRegularPlayerZM.LogToServer(username, "Unlimited Carry", "Disabled automatically")
+            print("Unlimited Carry is enabled for player: " .. username)
+            playerObj:setUnlimitedCarry(false)
+            cheatsDetected = true
+        end
     end
 
     -- Check Unlimited Endurance, but skip if player tier is Godlike

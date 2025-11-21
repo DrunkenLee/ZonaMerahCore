@@ -37,6 +37,16 @@ local itemToEquip = {
   "Base.Trousers_Fireman"
 }
 
+local itemMazeEvent = {
+  "AntiqueArmarment.FullPlateHelm",
+  "AntiqueArmarment.FullPlate",
+  'Base.Military_ThermalUnderwear-White'
+}
+
+local weaponMazeEvent = {
+  "RMWeapons.FallenCross"
+}
+
 function ZMPlayerInventoryHandler.StripPlayerInventory(playerObj)
     local playerInventory = playerObj:getInventory()
     local items = playerInventory:getItems()
@@ -80,5 +90,21 @@ function ZMPlayerInventoryHandler.GiveRandomWeapon(playerObj)
   playerInventory:AddItem(itemFullName)
 end
 
+function ZMPlayerInventoryHandler.GiveMazeEventItems(playerObj)
+  local playerInventory = playerObj:getInventory()
+  for _, itemFullName in ipairs(itemMazeEvent) do
+      local item = playerInventory:AddItem(itemFullName)
+      if item and item:getBodyLocation() then
+          playerObj:setWornItem(item:getBodyLocation(), item)
+      end
+  end
+  for _, itemFullName in ipairs(weaponMazeEvent) do
+      local item = playerInventory:AddItem(itemFullName)
+      if item and item:getBodyLocation() then
+          -- playerObj:setWornItem(item:getBodyLocation(), item)
+      end
+  end
+  playerObj:resetModel()
+end
 
 return ZMPlayerInventoryHandler

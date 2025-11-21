@@ -186,9 +186,15 @@ function ZM_ZombieSpawnerUI:initialise()
 end
 
 function ZM_ZombieSpawnerUI:populateZombieTypes()
-    -- Add base zombie types first
-    local zombieTypes = {
-        "normal", "runner", "tank", "sprinter", "boss", "horde", "elite", "crawler", "screamer1", "screamer2"
+    -- ONLY allow zombie types that are defined in ZM_ZombieHandlerServer.ZombieTypes
+    -- These are the only types that have proper configurations and loot tables
+    local validZombieTypes = {
+        "elite",      -- Elite soldier zombie (ArmyCamoGreen)
+        "elite2",     -- Elite soldier zombie (ArmyCamoDesert)
+        "screamer1",  -- Screamer type 1
+        "screamer2",  -- Screamer type 2
+        "psycho1",    -- Psycho type 1
+        "psycho2"     -- Psycho type 2
     }
 
     -- Clear existing items
@@ -196,33 +202,14 @@ function ZM_ZombieSpawnerUI:populateZombieTypes()
     self.playerTypeCombo:clear()
     self.hordeTypeCombo:clear()
 
-    -- Add zombie types
-    for _, zombieType in ipairs(zombieTypes) do
+    -- Add only valid zombie types
+    for _, zombieType in ipairs(validZombieTypes) do
         self.coordsTypeCombo:addOption(zombieType)
         self.playerTypeCombo:addOption(zombieType)
         self.hordeTypeCombo:addOption(zombieType)
     end
 
-    -- If ZM_ZombieHandler is available, add any additional types
-    if ZM_ZombieHandler and ZM_ZombieHandler.ZombieTypes then
-        for zombieType, _ in pairs(ZM_ZombieHandler.ZombieTypes) do
-            -- Check if not already added
-            local found = false
-            for _, existing in ipairs(zombieTypes) do
-                if existing == zombieType then
-                    found = true
-                    break
-                end
-            end
-            if not found then
-                self.coordsTypeCombo:addOption(zombieType)
-                self.playerTypeCombo:addOption(zombieType)
-                self.hordeTypeCombo:addOption(zombieType)
-            end
-        end
-    end
-
-    -- Set default selections
+    -- Set default selections (elite as default)
     self.coordsTypeCombo.selected = 1
     self.playerTypeCombo.selected = 1
     self.hordeTypeCombo.selected = 1
@@ -245,7 +232,22 @@ function ZM_ZombieSpawnerUI:onSpawnAtCoords()
     local y = tonumber(self.yEntry:getText()) or 0
     local z = tonumber(self.zEntry:getText()) or 0
     local count = tonumber(self.coordsCountEntry:getText()) or 1
-    local zombieType = self.coordsTypeCombo:getOptionText(self.coordsTypeCombo.selected) or "normal"
+    local zombieType = self.coordsTypeCombo:getOptionText(self.coordsTypeCombo.selected) or "elite"
+
+    -- Validate zombie type
+    local validTypes = {"elite", "elite2", "screamer1", "screamer2", "psycho1", "psycho2"}
+    local isValid = false
+    for _, validType in ipairs(validTypes) do
+        if zombieType == validType then
+            isValid = true
+            break
+        end
+    end
+
+    if not isValid then
+        print("Error: Invalid zombie type '" .. tostring(zombieType) .. "'. Only elite, elite2, screamer1, screamer2, psycho1, psycho2 are supported.")
+        return
+    end
 
     if ZM_ZombieHandler and ZM_ZombieHandler.spawnZombieAtCoords then
         ZM_ZombieHandler.spawnZombieAtCoords(x, y, z, zombieType, count)
@@ -258,7 +260,22 @@ end
 function ZM_ZombieSpawnerUI:onSpawnAtPlayer()
     local count = tonumber(self.playerCountEntry:getText()) or 1
     local safeRadius = tonumber(self.safeRadiusEntry:getText()) or 0
-    local zombieType = self.playerTypeCombo:getOptionText(self.playerTypeCombo.selected) or "normal"
+    local zombieType = self.playerTypeCombo:getOptionText(self.playerTypeCombo.selected) or "elite"
+
+    -- Validate zombie type
+    local validTypes = {"elite", "elite2", "screamer1", "screamer2", "psycho1", "psycho2"}
+    local isValid = false
+    for _, validType in ipairs(validTypes) do
+        if zombieType == validType then
+            isValid = true
+            break
+        end
+    end
+
+    if not isValid then
+        print("Error: Invalid zombie type '" .. tostring(zombieType) .. "'. Only elite, elite2, screamer1, screamer2, psycho1, psycho2 are supported.")
+        return
+    end
 
     if ZM_ZombieHandler and ZM_ZombieHandler.consoleSpawnZombie then
         ZM_ZombieHandler.consoleSpawnZombie(zombieType, count, safeRadius)
@@ -272,9 +289,24 @@ function ZM_ZombieSpawnerUI:onSpawnHorde()
     local count = tonumber(self.hordeCountEntry:getText()) or 10
     local radius = tonumber(self.hordeRadiusEntry:getText()) or 5
     local safeRadius = tonumber(self.hordeSafeEntry:getText()) or 0
-    local zombieType = self.hordeTypeCombo:getOptionText(self.hordeTypeCombo.selected) or "horde"
+    local zombieType = self.hordeTypeCombo:getOptionText(self.hordeTypeCombo.selected) or "elite"
     local isTargeted = self.targetCheckbox:isSelected()
     local targetUsername = isTargeted and self.targetEntry:getText() or nil
+
+    -- Validate zombie type
+    local validTypes = {"elite", "elite2", "screamer1", "screamer2", "psycho1", "psycho2"}
+    local isValid = false
+    for _, validType in ipairs(validTypes) do
+        if zombieType == validType then
+            isValid = true
+            break
+        end
+    end
+
+    if not isValid then
+        print("Error: Invalid zombie type '" .. tostring(zombieType) .. "'. Only elite, elite2, screamer1, screamer2, psycho1, psycho2 are supported.")
+        return
+    end
 
     if ZM_ZombieHandler and ZM_ZombieHandler.consoleSpawnHorde then
         ZM_ZombieHandler.consoleSpawnHorde(count, radius, isTargeted, targetUsername, zombieType, false, safeRadius)

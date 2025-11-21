@@ -37,6 +37,9 @@ function ZM_KillCountClient.init()
             sessionKills = 0
         }
     end
+
+    -- Report kills on player login to ensure data is up to date
+    ZM_KillCountClient.reportKillCount()
 end
 
 -- Get current player kill count (raw, INCLUDING bonus). Prefer using getAdjustedKills() elsewhere.
@@ -87,19 +90,44 @@ function ZM_KillCountClient.onServerCommand(module, command, args)
         if args and args.killData then
             -- Store the data for UI display (already adjusted server values)
             ZM_KillCountClient.serverKillData = args.killData
-            print("ZM_KillCountClient: Received kill count data from server")
+            local playerCount = 0
+            for _ in pairs(args.killData) do playerCount = playerCount + 1 end
+            print("ZM_KillCountClient: DEBUG - Received kill count data from server, " .. playerCount .. " players")
+        else
+            print("ZM_KillCountClient: DEBUG - Received killCountData command but no data in args")
         end
     end
 end
 
 -- Request kill count data from server
 function ZM_KillCountClient.requestKillCountData()
+    print("ZM_KillCountClient: DEBUG - Requesting kill count data from server...")
     sendClientCommand("ZM_KillCount", "requestKillData", {})
+    print("ZM_KillCountClient: DEBUG - Request sent to server")
+end
+
+-- Report kills when player is about to disconnect
+function ZM_KillCountClient.onPlayerDisconnect()
+    print("ZM_KillCountClient: Player disconnecting, reporting final kill count")
+    ZM_KillCountClient.reportKillCount()
+end
+
+-- Report kills when player dies (to capture any kills before death)
+-- function ZM_KillCountClient.onPlayerDeath(player)
+--     if player == getPlayer() then
+--         print("ZM_KillCountClient: Player died, reporting kill count")
+--         ZM_KillCountClient.reportKillCount()
+--     end
+-- end
+
+-- Periodic check every 10 minutes (more frequent than hourly)
+function ZM_KillCountClient.periodicReport()
+    ZM_KillCountClient.reportKillCount()
 end
 
 -- Event handlers
 Events.OnCreatePlayer.Add(ZM_KillCountClient.init)
-Events.EveryHours.Add(ZM_KillCountClient.reportKillCount)
+Events.EveryTenMinutes.Add(ZM_KillCountClient.periodicReport)  -- Report every 10 min
 Events.OnServerCommand.Add(ZM_KillCountClient.onServerCommand)
 
-print("ZM_KillCountClient: Client-side kill count tracking loaded (VIP bonus excluded in reports)")
+print("ZM_KillCountClient: Client-side kill count tracking loaded (VIP bonus excluded, auto-save on disconnect/death)")

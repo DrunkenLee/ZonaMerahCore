@@ -2,78 +2,23 @@ ZM_ZombieHandler = ZM_ZombieHandler or {}
 
 -- Zombie type definitions
 ZM_ZombieHandler.ZombieTypes = {
-    ["normal"] = {
-        health = 100,
-        strength = 1,
-        fitness = 1,
-        walkType = "shamble",
-        canSprint = false,
-        outfit = "Naked",
-        profession = "Unemployed"
-    },
-    ["runner"] = {
-        health = 80,
-        strength = 2,
-        fitness = 3,
-        walkType = "sprint1",
-        canSprint = true,
-        outfit = "Survivalist",
-        profession = "Survivalist"
-    },
-    ["tank"] = {
-        health = 200,
-        strength = 5,
-        fitness = 2,
-        walkType = "shamble",
-        canSprint = false,
-        outfit = "Police",
-        profession = "Police"
-    },
-    ["sprinter"] = {
-        health = 150,
-        strength = 3,
-        fitness = 5,
-        walkType = "sprint2",
-        canSprint = true,
-        outfit = "Police",
-        profession = "Soldier"
-    },
-    ["boss"] = {
-        health = 200,
-        strength = 8,
-        fitness = 6,
-        walkType = "sprint1",
-        canSprint = true,
-        outfit = "Police",
-        profession = "Police"
-    },
-    ["horde"] = {
-        health = 100,
-        strength = 3,
-        fitness = 2,
-        walkType = "shamble",
-        canSprint = false,
-        outfit = "Naked",
-        profession = "Unemployed"
-    },
     ["elite"] = {
-        health = 150,
-        strength = 6,
+        health = 200,
+        strength = 100,
         fitness = 4,
         walkType = "sprint1",
         canSprint = true,
         outfit = "ArmyCamoGreen",
         profession = "Soldier"
     },
-    ["crawler"] = {
-        health = 50,
-        strength = 1,
-        fitness = 1,
-        walkType = "crawl",
-        canSprint = false,
-        outfit = "Injured",
-        profession = "Unemployed",
-        isCrawler = true
+    ["elite2"] = {
+        health = 200,
+        strength = 100,
+        fitness = 4,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "ArmyCamoDesert",
+        profession = "Soldier"
     },
     ["screamer1"] = {
         health = 180,
@@ -92,38 +37,27 @@ ZM_ZombieHandler.ZombieTypes = {
         canSprint = true,
         outfit = "Screamer2",
         profession = "Unemployed"
+    },
+    ["psycho1"] = {
+        health = 180,
+        strength = 50,
+        fitness = 4,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Psycho1",
+        profession = "Unemployed"
+    },
+    ["psycho2"] = {
+        health = 200,
+        strength = 60,
+        fitness = 4,
+        walkType = "sprint2",
+        canSprint = true,
+        outfit = "Psycho2",
+        profession = "Unemployed"
     }
 }
 
--- Day Psycho at player location
-function spawnDayPsycho()
-    local sq = getPlayer():getCurrentSquare()
-    sendClientCommand('PsychoZed', 'doSpawn', {x = sq:getX() + 30, y = sq:getY() + 30, z = sq:getZ(), count = 1, fit = 'Psycho1', fChance = 100, isDown = false})
-    print("Spawning Day Psycho (Psycho1)")
-end
-
--- Night Psycho at player location
-function spawnNightPsycho()
-    local sq = getPlayer():getCurrentSquare()
-    sendClientCommand('PsychoZed', 'doSpawn', {x = sq:getX() + 30, y = sq:getY() + 30, z = sq:getZ(), count = 1, fit = 'Psycho2', fChance = 100, isDown = false})
-    print("Spawning Night Psycho (Psycho2)")
-end
-
--- Knocked down Day Psycho
-function spawnDayPsychoDown()
-    local sq = getPlayer():getCurrentSquare()
-    sendClientCommand('PsychoZed', 'doSpawn', {x = sq:getX() + 30, y = sq:getY() + 30, z = sq:getZ(), count = 1, fit = 'Psycho1', fChance = 100, isDown = true})
-    print("Spawning knocked down Day Psycho")
-end
-
--- At specific coordinates
-function spawnPsychoAt(x, y, z, psychoType, isDown)
-    psychoType = psychoType or 'Psycho1'
-    isDown = isDown or false
-    z = z or 0
-    sendClientCommand('PsychoZed', 'doSpawn', {x = x, y = y, z = z, count = 1, fit = psychoType, fChance = 100, isDown = isDown})
-    print("Spawning " .. psychoType .. " at " .. x .. ", " .. y .. ", " .. z)
-end
 
 -- This is defined outside any function (global scope)
 local soundFunction = function()
@@ -164,10 +98,32 @@ function ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, count, safeRadius)
     end
 
     count = count or 1
-    zombieType = zombieType or "normal"
+    zombieType = zombieType or "elite"
     safeRadius = safeRadius or 0 -- Default to 0 (no safe radius)
 
-    -- Send request to server
+    -- Check if this is a Psycho zombie type - use PsychoZed mod spawning
+    if zombieType == "psycho1" or zombieType == "psycho2" then
+        local fit = (zombieType == "psycho1") and "Psycho1" or "Psycho2"
+
+        for i = 1, count do
+            -- Spawn each zombie with slight position offset
+            local offsetX = (i - 1) * 2 -- Spread them out slightly
+            sendClientCommand('PsychoZed', 'doSpawn', {
+                x = player:getX() + 20 + offsetX,
+                y = player:getY() + 20,
+                z = player:getZ(),
+                count = 1,
+                fit = fit,
+                fChance = 100,
+                isDown = false
+            })
+        end
+
+        print("Spawning " .. count .. " " .. zombieType .. " zombie(s) using PsychoZed mod...")
+        return true
+    end
+
+    -- Standard zombie spawning for non-Psycho types
     sendClientCommand("ZM_ZombieHandler", "spawnZombieAtPlayer", {
         username = player:getUsername(),
         zombieType = zombieType,
@@ -191,9 +147,32 @@ function ZM_ZombieHandler.spawnZombieAtCoords(x, y, z, zombieType, count)
     end
 
     count = count or 1
-    zombieType = zombieType or "normal"
+    zombieType = zombieType or "elite"
     z = z or 0
 
+    -- Check if this is a Psycho zombie type - use PsychoZed mod spawning
+    if zombieType == "psycho1" or zombieType == "psycho2" then
+        local fit = (zombieType == "psycho1") and "Psycho1" or "Psycho2"
+
+        for i = 1, count do
+            -- Spawn each zombie with slight position offset
+            local offsetX = (i - 1) * 2 -- Spread them out slightly
+            sendClientCommand('PsychoZed', 'doSpawn', {
+                x = x + offsetX,
+                y = y,
+                z = z,
+                count = 1,
+                fit = fit,
+                fChance = 100,
+                isDown = false
+            })
+        end
+
+        print("Spawning " .. count .. " " .. zombieType .. " zombie(s) at coordinates using PsychoZed mod...")
+        return true
+    end
+
+    -- Standard zombie spawning for non-Psycho types
     sendClientCommand("ZM_ZombieHandler", "spawnZombieAtCoords", {
         username = player:getUsername(),
         zombieType = zombieType,
@@ -219,10 +198,40 @@ function ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, 
     count = count or 10
     radius = radius or 5
     isTargeted = isTargeted or false
-    zombieType = zombieType or "horde"
+    zombieType = zombieType or "elite"
     addVariety = addVariety or false
     safeRadius = safeRadius or 0 -- Default to 0 (no safe radius)
 
+    -- Check if this is a Psycho zombie type - use PsychoZed mod spawning
+    if zombieType == "psycho1" or zombieType == "psycho2" then
+        local fit = (zombieType == "psycho1") and "Psycho1" or "Psycho2"
+
+        -- Spawn horde in a circle around player position
+        for i = 1, count do
+            local angle = (i / count) * math.pi * 2
+            local spawnX = player:getX() + 30 + (math.cos(angle) * radius)
+            local spawnY = player:getY() + 30 + (math.sin(angle) * radius)
+
+            sendClientCommand('PsychoZed', 'doSpawn', {
+                x = spawnX,
+                y = spawnY,
+                z = player:getZ(),
+                count = 1,
+                fit = fit,
+                fChance = 100,
+                isDown = false
+            })
+        end
+
+        local message = "Spawning horde of " .. count .. " " .. zombieType .. " zombies using PsychoZed mod..."
+        if isTargeted and targetUsername then
+            message = message .. " (targeting not supported for PsychoZed zombies)"
+        end
+        print(message)
+        return true
+    end
+
+    -- Standard zombie spawning for non-Psycho types
     sendClientCommand("ZM_ZombieHandler", "spawnHorde", {
         username = player:getUsername(),
         count = count,

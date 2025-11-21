@@ -101,9 +101,20 @@ function ZM_KillCountUI:drawKillCountItem(y, item, alt)
 end
 
 function ZM_KillCountUI:updateKillData(killData)
-    if not killData then return end
+    if not killData then
+        print("ZM_KillCountUI: DEBUG - updateKillData called with nil data")
+        return
+    end
 
     self.killData = killData
+
+    -- Count players properly (killData is a dictionary, not array)
+    local playerCount = 0
+    for _ in pairs(killData) do
+        playerCount = playerCount + 1
+    end
+
+    print("ZM_KillCountUI: DEBUG - Updated kill data with " .. playerCount .. " players")
     self:refreshDisplay()
 end
 
@@ -120,16 +131,20 @@ function ZM_KillCountUI:refreshDisplay()
         })
     end
 
+    print("ZM_KillCountUI: DEBUG - refreshDisplay found " .. #sortedPlayers .. " players to display")
+
     table.sort(sortedPlayers, function(a, b)
         return a.killCount > b.killCount
     end)
 
-    for i = 1, math.min(10, #sortedPlayers) do
+    for i = 1, #sortedPlayers do
         local playerData = sortedPlayers[i]
         if playerData.killCount < 0 then playerData.killCount = 0 end
         playerData.index = i
         self.scrollArea:addItem(playerData.username, playerData)
     end
+
+    print("ZM_KillCountUI: DEBUG - Added " .. #sortedPlayers .. " items to scroll area")
 
     if self.playerInfoLabel then
         local player = getPlayer()
@@ -148,14 +163,31 @@ function ZM_KillCountUI:refreshDisplay()
 end
 
 function ZM_KillCountUI:requestKillData()
+    print("ZM_KillCountUI: DEBUG - requestKillData() called")
+
     -- Request fresh data from server
     if ZM_KillCountClient then
         ZM_KillCountClient.requestKillCountData()
+        print("ZM_KillCountUI: DEBUG - Requested kill data from server")
+    else
+        print("ZM_KillCountUI: DEBUG - ZM_KillCountClient not available")
     end
 
     -- Check if we have cached data
     if ZM_KillCountClient and ZM_KillCountClient.serverKillData then
+        print("ZM_KillCountUI: DEBUG - Found cached data")
+
+        -- Count properly for debug message
+        local cachedCount = 0
+        for username, data in pairs(ZM_KillCountClient.serverKillData) do
+            cachedCount = cachedCount + 1
+            print("ZM_KillCountUI: DEBUG - Cached player: " .. username .. " = " .. (data.killCount or 0) .. " kills")
+        end
+        print("ZM_KillCountUI: DEBUG - Using cached data, " .. cachedCount .. " players loaded")
+
         self:updateKillData(ZM_KillCountClient.serverKillData)
+    else
+        print("ZM_KillCountUI: DEBUG - No cached data available, waiting for server response...")
     end
 end
 
@@ -187,6 +219,9 @@ function ZM_KillCountUI.show()
     ui:addToUIManager()
     ui:setVisible(true)
 
+    -- Store instance for server command handling
+    ZM_KillCountUI.instance = ui
+
     return ui
 end
 
@@ -196,12 +231,41 @@ ZM_KillCountUI.instance = nil
 -- Handle server data updates
 Events.OnServerCommand.Add(function(module, command, args)
     if module == "ZM_KillCount" and command == "killCountData" then
-        if ZM_KillCountUI.instance and args and args.killData then
-            ZM_KillCountUI.instance:updateKillData(args.killData)
+        print("ZM_KillCountUI: DEBUG - Received server command 'killCountData'")
+
+        if args then
+            print("ZM_KillCountUI: DEBUG - args exists")
+            if args.killData then
+                print("ZM_KillCountUI: DEBUG - args.killData exists")
+
+                -- Count and log received data
+                local receivedCount = 0
+                for username, data in pairs(args.killData) do
+                    receivedCount = receivedCount + 1
+                    print("ZM_KillCountUI: DEBUG - Received player: " .. username .. " = " .. (data.killCount or 0) .. " kills")
+                end
+                print("ZM_KillCountUI: DEBUG - Total received: " .. receivedCount .. " players")
+            else
+                print("ZM_KillCountUI: DEBUG - args.killData is nil!")
+            end
+        else
+            print("ZM_KillCountUI: DEBUG - args is nil!")
         end
+
+        if ZM_KillCountUI.instance and args and args.killData then
+            print("ZM_KillCountUI: DEBUG - Calling updateKillData on UI instance")
+            ZM_KillCountUI.instance:updateKillData(args.killData)
+        else
+            print("ZM_KillCountUI: DEBUG - No UI instance or invalid args")
+            if not ZM_KillCountUI.instance then
+                print("ZM_KillCountUI: DEBUG - ZM_KillCountUI.instance is nil!")
+            end
+        end
+
         -- Also store in client for future access
         if ZM_KillCountClient then
             ZM_KillCountClient.serverKillData = args.killData
+            print("ZM_KillCountUI: DEBUG - Stored data in ZM_KillCountClient.serverKillData")
         end
     end
 end)

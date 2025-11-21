@@ -156,7 +156,17 @@ ZMEquipmentHandler.restrictedGearTypes = {
   ["Base.Nezuko"] = true,
   ["Base.Manusia"] = true,
   ["Exclusive.Silver_Wolf"] = true,
-  ["Stranger.Stranger"] = true
+  ["Stranger.Stranger"] = true,
+  ["Base.Stranger"] = true,
+  ["Base.AntiRad"] = true,
+  ["Base.Cyan"] = true,
+  ["Base.Cyan_NoWing"] = true,
+  ["Base.M_Conquistadors"] = true,
+  ["Base.RE8_Tundra"] = true,
+  ["Base.Suomi_Girls_Frontline"] = true,
+  ["Base.Vector_Girls_Frontline"] = true,
+  ["Base.kaela"] = true,
+  ["Base.quiet"] = true
 }
 
 
@@ -274,6 +284,7 @@ function ZMEquipmentHandler.onClothingUpdated(player)
     ZMEquipmentHandler.setRestrictedGearAllow("Vefulz", "Base.Nezuko", true)
     ZMEquipmentHandler.setRestrictedGearAllow("CowboyTanaka", "Base.Manusia", true)
     ZMEquipmentHandler.setRestrictedGearAllow("Yuu", "Exclusive.Silver_Wolf", true)
+    ZMEquipmentHandler.setRestrictedGearAllow("Stranger", "Base.Stranger", true)
     ZMEquipmentHandler.setRestrictedGearAllow("Stranger", "Stranger.Stranger", true)
     ZMEquipmentHandler.setRestrictedGearAllow("admin", "Base.swat", true)
 
