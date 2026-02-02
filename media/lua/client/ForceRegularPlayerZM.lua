@@ -1,6 +1,6 @@
 require("EventsPlusMain.lua")
 ForceRegularPlayerZM = ForceRegularPlayerZM or {}
-
+-- overrided 1
 -- Create a client-side wrapper for server logging
 function ForceRegularPlayerZM.LogToServer(username, cheatType, details)
     -- Send log event to server
@@ -12,23 +12,42 @@ function ForceRegularPlayerZM.LogToServer(username, cheatType, details)
 end
 
 local skipGhostModeCheckUntil = 0
+local gracePeriodEndTime = 0
+local gracePeriodActive = false
+local isInvisible = false
+
 
 local function OnCreatePlayer(playerNum, player)
-    -- Set flag to skip ghost mode check for 1 minute (real time) after player creation
-    skipGhostModeCheckUntil = getTimestampMs() + 60000 -- 60 seconds from now
+    -- Set flag to skip ghost mode check for 30 seconds after player creation
+    skipGhostModeCheckUntil = getTimestampMs() + 30000
+    gracePeriodEndTime = getTimestampMs() + 30000
+    gracePeriodActive = true
+
     PlayerFlagHandler.giveFlag("godmod_allow", false)
+
+    -- Enable ghost mode and invisibility for grace period (client side)
+    if player then
+        -- Request server to send invisibleplayer command
+        isInvisible = player:isInvisible()
+        -- player:setGhostMode(true)
+        -- player:setInvisible(false, true)
+        -- ToggleInvisibleHimself()
+        -- print("Grace period started for player: " .. player:getUsername() .. " (30 seconds)")
+    end
+end
+
+local function OnQSystemPostStart(playerNum, player)
+
 end
 
 Events.OnCreatePlayer.Add(OnCreatePlayer)
+-- Events.OnQSystemPostStart.Add(OnQSystemPostStart)
 
 function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     local playerObj = getPlayer()
     if not playerObj then return end
 
     local isDebugEnabled = isDebugEnabled()
-
-    -- if not isDebugEnabled then return end
-    -- Skip if player is admin
     local accessLevel = "standard"
     accessLevel = playerObj:getAccessLevel()
     -- print(accessLevel .. " is the access level of " .. playerObj:getUsername())
@@ -39,6 +58,7 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     local username = playerObj:getUsername()
 
     if username == "NenekLincah" then
+        playerObj:setUnlimitedEndurance(true)
         return
     end
 
@@ -46,17 +66,24 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 
     local cheatsDetected = false
 
-    -- Skip ghost mode check if within 1 minute of player creation
+    -- Skip ghost mode check if within grace period
     if getTimestampMs() > skipGhostModeCheckUntil then
         if playerObj:isGhostMode() then
-            -- ForceRegularPlayerZM.LogToServer(username, "Ghost Mode", "Disabled automatically")
             print("Ghost Mode is enabled for player: " .. username)
             playerObj:setGhostMode(false)
+            playerObj:setInvisible(false)
             -- playerObj:Say("Ghost Mode has been disabled.")
+            if isInvisible then
+                sendClientCommand("ZonaMerahCore", "RequestInvisible", {
+                  username = player:getUsername()
+                })
+            end
+
             cheatsDetected = true
         end
+
     else
-        print("Skipping ghost mode check for player: " .. username .. " until next minute")
+        print("Skipping ghost mode check for player: " .. username .. " (grace period active)")
     end
 
     if playerObj:isGodMod() then
@@ -132,6 +159,8 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
             playerObj:setInvisible(false)
             cheatsDetected = true
         end
+    else
+        print("Skipping invisible check for player: " .. username .. " (grace period active)")
     end
 
     if playerObj:isBuildCheat() then
@@ -243,9 +272,31 @@ function ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
     end
 end
 
+-- Run every game tick to enforce grace period continuously on client side
+
+-- Display grace period countdown and send update to server every minute
 Events.EveryOneMinute.Add(function()
     local playerObj = getPlayer()
     if not playerObj then return end
+
+    local playerTier = PlayerTierHandler.getPlayerTierValue(playerObj) or 1
+
+    if playerObj:getUsername() == "NenekLincah" or playerTier >= 8 then
+        sendClientCommand("ZonaMerahCore", "SetEndurance", {
+            username = playerObj:getUsername(),
+            isAllowed = true
+        })
+        local stats = playerObj:getStats()
+        stats:setLastEndurance(1.0)
+        local enduranceStat = CharacterStat.getById("Endurance")
+        if enduranceStat then
+            stats:add(enduranceStat, 1.0)
+        end
+    end
+
+    -- Display remaining grace period time and notify server
+
+
     -- playerObj:Say("Checking for cheats...")
     ForceRegularPlayerZM.ZMSetDefaultPlayerStat()
 end)

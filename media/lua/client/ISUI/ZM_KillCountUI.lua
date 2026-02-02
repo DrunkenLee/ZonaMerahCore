@@ -1,6 +1,5 @@
--- ZM_KillCountUI.lua - UI for displaying player kill counts
+-- ZM_KillCountUI.lua - UI for displaying player kill counts (from HordeKillLeaderboard.txt)
 require "ISUI/ISPanel"
-require "PlayerTitleHandler" -- for adjusted kill calculation
 
 ZM_KillCountUI = ISPanel:derive("ZM_KillCountUI")
 
@@ -56,14 +55,10 @@ function ZM_KillCountUI:initialise()
     self.closeBtn:initialise()
     self:addChild(self.closeBtn)
 
-    -- Current player info
-    local player = getPlayer()
-    if player then
-        local currentKills = player:getZombieKills() or 0
-        self.playerInfoLabel = ISLabel:new(padding, self.height - 35, FONT_HGT_SMALL,
-            "Your Kills: " .. currentKills, 1, 1, 0, 1, UIFont.Small, true)
-        self:addChild(self.playerInfoLabel)
-    end
+    -- Current player info label (will show player's kills from leaderboard if they're in it)
+    self.playerInfoLabel = ISLabel:new(padding, self.height - 35, FONT_HGT_SMALL,
+        "Your kills will be shown if you're on the leaderboard", 1, 1, 0, 1, UIFont.Small, true)
+    self:addChild(self.playerInfoLabel)
 
     -- Request data from server
     self:requestKillData()
@@ -127,7 +122,6 @@ function ZM_KillCountUI:refreshDisplay()
         table.insert(sortedPlayers, {
             username = username,
             killCount = data.killCount or 0,
-            -- timestamp etc intentionally ignored in display
         })
     end
 
@@ -146,18 +140,24 @@ function ZM_KillCountUI:refreshDisplay()
 
     print("ZM_KillCountUI: DEBUG - Added " .. #sortedPlayers .. " items to scroll area")
 
+    -- Update player info label to show their position if they're in the leaderboard
     if self.playerInfoLabel then
         local player = getPlayer()
         if player then
-            local adjusted = player:getZombieKills() or 0
-            if PlayerTitleHandler and PlayerTitleHandler.getPlayerTitle then
-                local level = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
-                local bonusMap = { [1]=1000,[2]=3000,[3]=5000 }
-                local bonus = bonusMap[level] or 0
-                adjusted = adjusted - bonus
-                if adjusted < 0 then adjusted = 0 end
+            local playerName = player:getUsername()
+            local found = false
+
+            for i = 1, #sortedPlayers do
+                if sortedPlayers[i].username == playerName then
+                    self.playerInfoLabel:setName(string.format("Your Position: #%d with %d kills", i, sortedPlayers[i].killCount))
+                    found = true
+                    break
+                end
             end
-            self.playerInfoLabel:setName("Your Kills: " .. adjusted)
+
+            if not found then
+                self.playerInfoLabel:setName("You are not on the leaderboard yet")
+            end
         end
     end
 end

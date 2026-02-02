@@ -1,5 +1,8 @@
 ZM_ZombieHandlerServer = ZM_ZombieHandlerServer or {}
 
+-- NOTE: Using PZ's built-in round() function which returns Integer type
+-- Do NOT define custom round() as it returns Double type causing spawn errors
+
 -- Safe accessor for sandbox variables (works even early in server start)
 local function getSandboxVar(name, default)
     if SandboxVars and SandboxVars[name] ~= nil then
@@ -24,7 +27,7 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         health = 200,
         strength = 100,
         fitness = 4,
-        walkType = "sprint1",
+        walkType = "WTSprint2",
         canSprint = true,
         outfit = "ArmyCamoGreen",
         profession = "Soldier"
@@ -33,7 +36,7 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         health = 200,
         strength = 100,
         fitness = 4,
-        walkType = "sprint1",
+        walkType = "sprint2",
         canSprint = true,
         outfit = "ArmyCamoDesert",
         profession = "Soldier"
@@ -42,7 +45,7 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         health = 150,
         strength = 20,
         fitness = 3,
-        walkType = "sprint1",
+        walkType = "WTSprint2",
         canSprint = true,
         outfit = "Screamer1",
         profession = "Unemployed"
@@ -51,30 +54,277 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         health = 150,
         strength = 20,
         fitness = 4,
-        walkType = "sprint2",
+        walkType = "WTSprint2",
         canSprint = true,
         outfit = "Screamer2",
         profession = "Unemployed"
     },
-    ["psycho1"] = {
-        health = 180,
-        strength = 50,
-        fitness = 4,
+    ["bandit_late"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
         walkType = "sprint1",
         canSprint = true,
-        outfit = "Psycho1",
+        outfit = "Bandit_Late",
         profession = "Unemployed"
     },
-    ["psycho2"] = {
-        health = 200,
-        strength = 60,
-        fitness = 4,
+    ["bandit_mid"] = {
+        health = 140,
+        strength = 35,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Bandit_Mid",
+        profession = "Unemployed"
+    },
+    ["biker"] = {
+        health = 160,
+        strength = 45,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Biker",
+        profession = "Unemployed"
+    },
+    ["monster_bride"] = {
+        health = 100,
+        strength = 45,
+        fitness = 3,
         walkType = "sprint2",
         canSprint = true,
-        outfit = "Psycho2",
+        outfit = "CostumeMonsterBride",
+        profession = "Unemployed"
+    },
+    ["bank_robber"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "BankRobberSuit",
+        profession = "Unemployed"
+    },
+    ["bounty_hunter"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "BountyHunter",
+        profession = "Unemployed"
+    },
+    ["beast_mom"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "CostumeBeastMom",
+        profession = "Unemployed"
+    },
+    ["chunk"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "CostumeChunk",
+        profession = "Unemployed"
+    },
+    ["commando_john"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "CostumeCommandoJohn",
+        profession = "Unemployed"
+    },
+    ["ghillie"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Ghillie",
+        profession = "Unemployed"
+    },
+    ["hunter"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Hunter",
+        profession = "Unemployed"
+    },
+    ["ice_hockey_white"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "IceHockey_White",
+        profession = "Unemployed"
+    },
+    ["ice_hockey_goalie"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "IceHockey_White_Goalie",
+        profession = "Unemployed"
+    },
+    ["punk"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Punk",
         profession = "Unemployed"
     }
 }
+
+-- Debug flag for sprint enforcement logging
+ZM_ZombieHandlerServer.SprintDebug = (ZM_ZombieHandlerServer.SprintDebug ~= false)
+ZM_ZombieHandlerServer.PendingSpawns = ZM_ZombieHandlerServer.PendingSpawns or {}
+
+local function sprintLog(message)
+    if ZM_ZombieHandlerServer.SprintDebug then
+        print("[ZM_ZombieHandler] " .. message)
+    end
+end
+
+local function queuePendingSpawn(zombieType, outfit, x, y, z)
+    if not zombieType then return end
+    local entry = {
+        zombieType = zombieType,
+        outfit = outfit,
+        x = math.floor(x or 0),
+        y = math.floor(y or 0),
+        z = math.floor(z or 0)
+    }
+    local list = ZM_ZombieHandlerServer.PendingSpawns
+    list[#list + 1] = entry
+    sprintLog("Queued spawn - type=" .. tostring(zombieType) ..
+              ", outfit=" .. tostring(outfit) ..
+              ", pos=(" .. entry.x .. "," .. entry.y .. "," .. entry.z .. ")")
+    return entry
+end
+
+local function matchPendingSpawn(zombie)
+    local list = ZM_ZombieHandlerServer.PendingSpawns
+    if not list or #list == 0 or not zombie then return nil end
+
+    local outfit = zombie:getOutfitName()
+    if not outfit then return nil end
+
+    local zx = math.floor(zombie:getX() or 0)
+    local zy = math.floor(zombie:getY() or 0)
+    local zz = math.floor(zombie:getZ() or 0)
+
+    for i = #list, 1, -1 do
+        local entry = list[i]
+        if entry and entry.outfit == outfit and entry.z == zz then
+            local dx = math.abs(zx - entry.x)
+            local dy = math.abs(zy - entry.y)
+            if dx <= 2 and dy <= 2 then
+                table.remove(list, i)
+                return entry
+            end
+        end
+    end
+    return nil
+end
+
+local function removePendingSpawn(entry)
+    if not entry then return false end
+    local list = ZM_ZombieHandlerServer.PendingSpawns
+    if not list or #list == 0 then return false end
+    for i = #list, 1, -1 do
+        if list[i] == entry then
+            table.remove(list, i)
+            return true
+        end
+    end
+    return false
+end
+
+function ZM_ZombieHandlerServer.forceSprintForZombie(zombie, zombieType, reason)
+    if not zombie then return false end
+
+    local resolvedType = zombieType
+    if not resolvedType then
+        local modData = zombie:getModData()
+        if modData and modData.ZM_ZombieType then
+            resolvedType = modData.ZM_ZombieType
+        end
+    end
+
+    if not resolvedType then
+        sprintLog("forceSprint skipped - no zombieType (reason=" .. tostring(reason) .. ")")
+        return false
+    end
+
+    local zombieData = ZM_ZombieHandlerServer.ZombieTypes[resolvedType]
+    if not zombieData then
+        sprintLog("forceSprint skipped - unknown type " .. tostring(resolvedType) ..
+                  " (reason=" .. tostring(reason) .. ")")
+        return false
+    end
+
+    local desiredWalkType = zombieData.walkType
+    local shouldSprint = (zombieData.canSprint == true) and
+        (desiredWalkType == "sprint1" or desiredWalkType == "sprint2")
+
+    local currentWalkType = nil
+    if zombie.getWalkType then
+        currentWalkType = zombie:getWalkType()
+    end
+
+    sprintLog("forceSprint check - type=" .. tostring(resolvedType) ..
+              ", outfit=" .. tostring(zombie:getOutfitName()) ..
+              ", id=" .. tostring(zombie:getOnlineID()) ..
+              ", pos=(" .. tostring(zombie:getX()) .. "," .. tostring(zombie:getY()) .. "," .. tostring(zombie:getZ()) .. ")" ..
+              ", desired=" .. tostring(desiredWalkType) ..
+              ", current=" .. tostring(currentWalkType) ..
+              ", shouldSprint=" .. tostring(shouldSprint) ..
+              ", reason=" .. tostring(reason))
+
+    if not shouldSprint then
+        return false
+    end
+
+
+
+    zombie:setWalkType(desiredWalkType)
+    print(desiredWalkType .. "<- Desired Walktype")
+    zombie:setSprinting(true)
+    local modData = zombie:getModData()
+    modData.ZM_ZombieType = resolvedType
+    modData.ZM_DesiredWalkType = desiredWalkType
+    modData.ZM_WalkTypeSet = true
+
+    sprintLog("forceSprint applied - type=" .. tostring(resolvedType) ..
+              ", walkType=" .. tostring(desiredWalkType) ..
+              ", id=" .. tostring(zombie:getOnlineID()) ..
+              ", reason=" .. tostring(reason))
+    return true
+end
+
+ZM_ZombieHandlerServer.onZombieCreate = function(zombie)
+    if not zombie then return end
+    local entry = matchPendingSpawn(zombie)
+    if not entry then return end
+
+    sprintLog("OnZombieCreate matched spawn - type=" .. tostring(entry.zombieType) ..
+              ", outfit=" .. tostring(entry.outfit) ..
+              ", id=" .. tostring(zombie:getOnlineID()))
+
+    ZM_ZombieHandlerServer.forceSprintForZombie(zombie, entry.zombieType, "OnZombieCreate")
+end
 
 function ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
     if not zombie then return end
@@ -473,7 +723,7 @@ ZM_ZombieHandlerServer.onZombieDeath = function(zombie)
     -- Clear old loot table and recalculate with current settings
     -- Note: addItemsToZombie does NOT modify ZM_ZombieType, only prepares the loot table
     modData.ZM_LootTable = nil
-    ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
+    -- ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
 
     -- Use the newly calculated loot table
     modData = zombie:getModData()
@@ -494,6 +744,94 @@ end
 
 Events.OnZombieDead.Add(ZM_ZombieHandlerServer.onZombieDeath)
 
+-- Send zombie health to the attacker client for immediate sync
+function ZM_ZombieHandlerServer.syncZombieHealthToClient(attacker, zombie)
+    if not attacker or not zombie then return end
+    if attacker.isPlayer and attacker:isPlayer() then
+        sendServerCommand(attacker, "ZM_ZombieHandler", "syncZombieHealth", {
+            zombieID = zombie:getOnlineID(),
+            health = zombie:getHealth()
+        })
+    end
+end
+
+-- Server-side hit handler for special zombie abilities
+function ZM_ZombieHandlerServer.onZombieHit(zombie, attacker, bodyPart, weapon)
+    if not zombie or not attacker then return end
+
+    local zombieOutfit = zombie:getOutfitName()
+    if not zombieOutfit then return end
+
+    -- Defer sprint walk types until the zombie is hit for the first time
+    local modData = zombie:getModData()
+    if modData and modData.ZM_DesiredWalkType and not modData.ZM_WalkTypeSet then
+        local desiredWalkType = modData.ZM_DesiredWalkType
+        if desiredWalkType == "sprint1" or desiredWalkType == "sprint2" then
+            zombie:setWalkType(desiredWalkType)
+            modData.ZM_WalkTypeSet = true
+        end
+    end
+
+    -- ArmyCamoGreen zombie: 95% damage resistance (only takes damage 5% of the time)
+        if zombieOutfit == "ArmyCamoGreen" then
+            zombie:setSprinting(true)
+            zombie:setWalkType("WTSprint2")
+
+            local damageChance = 80 -- 10% chance to take damage
+            local damageRoll = ZombRand(100)
+
+            if damageRoll >= damageChance then
+
+        else
+
+            zombie:setAvoidDamage(true)
+
+            if weapon and not weapon:isRanged() then
+                zombie:hitConsequences(weapon, attacker, true, 0.0, false)
+            end
+            zombie:DoZombieSpeeds(0.2)
+            print("[ZM_ZombieHandler] ArmyCamoGreen resisted damage (roll: " .. damageRoll .. " < " .. damageChance .. ")")
+        end
+    end
+
+    -- Screamer1 zombie: 95% damage resistance
+    if zombieOutfit == "Screamer1" then
+        local damageChance = 20  -- 20% chance to take damage
+        local damageRoll = ZombRand(100)
+
+        if damageRoll >= damageChance then
+            -- 95% resistance - heal the zombie back
+            -- local currentHealth = zombie:getHealth()
+            -- zombie:setHealth(currentHealth + 10)  -- Restore health to negate damage
+            -- print("[ZM_ZombieHandler] Screamer1 resisted damage (roll: " .. damageRoll .. " >= " .. damageChance .. ")")
+        else
+            -- print("[ZM_ZombieHandler] Screamer1 took damage (roll: " .. damageRoll .. " < " .. damageChance .. ")")
+        end
+    end
+
+    -- Screamer2 zombie: 20% chance to deflect damage to attacker
+    if zombieOutfit == "Screamer2" and attacker:isPlayer() then
+        local deflectChance = 20
+        local specialStatusChance = 5  -- 5% chance for panic effect
+        local deflectRoll = ZombRand(100)
+
+        if deflectRoll < deflectChance then
+            local damageAmount = 15  -- Fixed damage amount to deflect
+
+            if attacker:getBodyDamage() then
+                attacker:getBodyDamage():AddDamage(BodyPartType.Head, damageAmount)
+                if deflectRoll < specialStatusChance then
+                    attacker:getStats():setPanic(attacker:getStats():getPanic() + 20)
+                end
+                print("[ZM_ZombieHandler] Screamer2 deflected " .. damageAmount .. " damage to attacker (roll: " .. deflectRoll .. ")")
+            end
+        end
+    end
+end
+
+Events.OnHitZombie.Add(ZM_ZombieHandlerServer.onZombieHit)
+
+
 -- Function to create and configure a zombie
 function ZM_ZombieHandlerServer.createZombie(square, zombieType)
     if not square then return nil end
@@ -506,44 +844,73 @@ function ZM_ZombieHandlerServer.createZombie(square, zombieType)
 
     local x, y, z = square:getX(), square:getY(), square:getZ()
 
-    addZombiesInOutfit(
-        x, y, z, 1,  -- coordinates and count
-        zombieData.outfit or "Random",  -- outfit
-        0.5,  -- femChance
-        zombieData.isCrawler or false,  -- isCrawler
-        false,  -- isFallOnFront
-        false,  -- isFakeDead
-        false,  -- isKnockedDown
-        1.0
+    -- Convert coordinates to integers to avoid Double type issues
+    local ix = math.floor(x)
+    local iy = math.floor(y)
+    local iz = math.floor(z)
+
+    -- Track this spawn so OnZombieCreate can match and force sprint immediately
+    local pendingEntry = queuePendingSpawn(zombieType, zombieData.outfit or "Random", ix, iy, iz)
+
+    -- Use addZombiesInOutfitArea with explicit integer conversion
+    -- Signature: addZombiesInOutfitArea(int x1, int y1, int x2, int y2, int z, int totalZombies, String outfit, Integer femaleChance)
+    local zombieList = addZombiesInOutfitArea(
+        ix, iy,         -- x1, y1 (start coordinates) - integers
+        ix, iy,         -- x2, y2 (end coordinates - same as start for single tile) - integers
+        iz,             -- z level - integer
+        1,              -- totalZombies - integer
+        zombieData.outfit or "Random",  -- outfit - string
+        nil             -- femaleChance - nil means random (or use 50)
     )
 
-    print("[ZM_ZombieHandlerServer] Spawned " .. zombieData.outfit .. " zombie at (" .. round(x) .. ", " .. round(y) .. ", " .. round(z) .. ")")
+    -- print("[ZM_ZombieHandlerServer] Called addZombiesInOutfitArea for " .. zombieData.outfit .. " zombie at (" .. ix .. ", " .. iy .. ", " .. iz .. ")")
 
-    local zombies = square:getMovingObjects()
+    -- Get the zombie from the returned list or from the square
     local zombie = nil
 
-    for i = zombies:size() - 1, 0, -1 do
-        local obj = zombies:get(i)
-        if instanceof(obj, "IsoZombie") then
-            zombie = obj
-            break
+    if zombieList and zombieList:size() > 0 then
+        zombie = zombieList:get(0)
+        -- print("[ZM_ZombieHandlerServer] Found zombie from returned list")
+    else
+        print("[ZM_ZombieHandlerServer] zombieList is empty or nil, searching square and nearby...")
+
+        -- Search the target square and nearby squares (3x3 area)
+        for dx = -1, 1 do
+            for dy = -1, 1 do
+                local searchSquare = getCell():getGridSquare(ix + dx, iy + dy, iz)
+                if searchSquare then
+                    local zombies = searchSquare:getMovingObjects()
+                    for i = 0, zombies:size() - 1 do
+                        local obj = zombies:get(i)
+                        if instanceof(obj, "IsoZombie") then
+                            local zombieOutfit = obj:getOutfitName()
+                            -- Check if this zombie has the outfit we just spawned
+                            if zombieOutfit == zombieData.outfit then
+                                zombie = obj
+                                -- print("[ZM_ZombieHandlerServer] Found zombie from square search at offset (" .. dx .. ", " .. dy .. ")")
+                                break
+                            end
+                        end
+                    end
+                    if zombie then break end
+                end
+            end
+            if zombie then break end
         end
     end
 
     if not zombie then
-        -- print("Error: Could not find spawned zombie")
+        removePendingSpawn(pendingEntry)
+        print("[ZM_ZombieHandlerServer] Error: Could not find spawned zombie")
         return nil
     end
 
+
+    -- print("[ZM_ZombieHandlerServer] Successfully found zombie, configuring...")
+
     zombie:setHealth(zombieData.health)
-    if zombie:getStats() then
 
-    end
-
-    -- Configure movement
-    if zombie.setWalkType then
-        zombie:setWalkType(zombieData.walkType)
-    end
+    -- Configure movement settings first
     if zombie.setCanSprint then
         zombie:setCanSprint(zombieData.canSprint)
     end
@@ -560,18 +927,68 @@ function ZM_ZombieHandlerServer.createZombie(square, zombieType)
         zombie:makeInactive(false)
     end
 
+    -- Store the desired walk type and zombie type in mod data
+    zombie:getModData().ZM_DesiredWalkType = zombieData.walkType
+    zombie:getModData().ZM_ZombieType = zombieType
+
     -- Additional configuration for screamers
     if zombieType == "screamer1" or zombieType == "screamer2" then
         -- zombie:setVariable("isScreamerII", true)
     end
 
-    -- Call the function to add loot to the zombie
-    ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
+    -- Force sprint immediately as a fallback in case OnZombieCreate didn't match
+    ZM_ZombieHandlerServer.forceSprintForZombie(zombie, zombieType, "post-create")
 
-    -- IMPORTANT: Set the zombie type AFTER adding loot to mark this as a special zombie
-    zombie:getModData().ZM_ZombieType = zombieType
+    -- Ensure the pending entry doesn't linger after fallback
+    removePendingSpawn(pendingEntry)
+
+    -- Call the function to add loot to the zombie
+    -- ZM_ZombieHandlerServer.addItemsToZombie(zombie, zombieType)
 
     return zombie
+end
+
+-- Function to count zombies in a circular area
+function ZM_ZombieHandlerServer.countZombiesInArea(x, y, z, radius)
+    if not x or not y or not z or not radius then return 0 end
+
+    local cell = getCell()
+    if not cell then return 0 end
+
+    local zombieCount = 0
+    local searchRadius = math.ceil(radius)
+
+    -- Search in a square area and check distance for each zombie
+    for dx = -searchRadius, searchRadius do
+        for dy = -searchRadius, searchRadius do
+            local checkX = x + dx
+            local checkY = y + dy
+            local square = cell:getGridSquare(checkX, checkY, z)
+
+            if square then
+                -- Get all moving objects on this square
+                local objects = square:getMovingObjects()
+                if objects then
+                    for i = 0, objects:size() - 1 do
+                        local obj = objects:get(i)
+                        -- Check if it's a zombie
+                        if obj and instanceof(obj, "IsoZombie") then
+                            -- Calculate actual distance to ensure it's within radius
+                            local objX = obj:getX()
+                            local objY = obj:getY()
+                            local distance = math.sqrt((objX - x)^2 + (objY - y)^2)
+
+                            if distance <= radius then
+                                zombieCount = zombieCount + 1
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    print("[ZM_ZombieHandlerServer] countZombiesInArea found " .. zombieCount .. " zombies within radius " .. radius .. " of (" .. x .. ", " .. y .. ", " .. z .. ")")
+    return zombieCount
 end
 
 -- Add this function to check if any player is within the safe radius
@@ -593,6 +1010,25 @@ function ZM_ZombieHandlerServer.isPlayerNearby(x, y, z, radius)
     return false
 end
 
+-- Find a zombie by OnlineID (server-side)
+function ZM_ZombieHandlerServer.findZombieByOnlineID(onlineID)
+    if not onlineID then return nil end
+    local cell = getCell()
+    if not cell or not cell.getZombieList then return nil end
+
+    local list = cell:getZombieList()
+    if not list then return nil end
+
+    for i = 0, list:size() - 1 do
+        local z = list:get(i)
+        if z and z.getOnlineID and z:getOnlineID() == onlineID then
+            return z
+        end
+    end
+
+    return nil
+end
+
 -- Function to spawn zombie at player location
 function ZM_ZombieHandlerServer.spawnZombieAtPlayer(player, args)
     -- Add admin check
@@ -604,6 +1040,8 @@ function ZM_ZombieHandlerServer.spawnZombieAtPlayer(player, args)
         -- print("[ZM_ZombieHandler] Skipping Psycho zombie spawn - handled by PsychoZed mod")
         return
     end
+
+    print("[ZM_ZombieHandler] spawnZombieAtPlayer called - zombieType: " .. zombieType .. ", count: " .. (args.count or 1))
 
     local count = math.min(args.count or 1, 50) -- Limit to 50 zombies max
     local safeRadius = args.safeRadius or 0
@@ -625,10 +1063,28 @@ function ZM_ZombieHandlerServer.spawnZombieAtPlayer(player, args)
             local y = args.y + math.sin(angle) * distance
             local square = getCell():getGridSquare(x, y, args.z or 0)
 
+            print("[ZM_ZombieHandler] Attempt " .. attempt .. " - square: " .. tostring(square ~= nil) .. ", x: " .. x .. ", y: " .. y)
+
             -- Check if square is valid and no player is within safeRadius
             if square and not ZM_ZombieHandlerServer.isPlayerNearby(x, y, args.z or 0, safeRadius) then
+                print("[ZM_ZombieHandler] Square valid, creating zombie...")
                 local zombie = ZM_ZombieHandlerServer.createZombie(square, zombieType)
+                print("[ZM_ZombieHandler] createZombie returned: " .. tostring(zombie ~= nil))
                 if zombie then
+                    print("[ZM_ZombieHandler] SUCCESS - Zombie created!")
+                    -- Set walk type after zombie is created
+                    local desiredWalkType = zombie:getModData().ZM_DesiredWalkType
+                    if desiredWalkType then
+                        local modData = zombie:getModData()
+                        if not modData.ZM_WalkTypeSet then
+                            if desiredWalkType ~= "sprint1" and desiredWalkType ~= "sprint2" then
+                                zombie:setWalkType(desiredWalkType)
+                                modData.ZM_WalkTypeSet = true
+                            else
+                                modData.ZM_WalkTypeSet = false
+                            end
+                        end
+                    end
                     spawnedCount = spawnedCount + 1
                     validSquareFound = true
                     break
@@ -663,17 +1119,47 @@ function ZM_ZombieHandlerServer.spawnZombieAtCoords(player, args)
         return
     end
 
+    -- Count zombies in a 200x200 area (radius 100) around the target coords before spawning
+    local centerX = args.x
+    local centerY = args.y
+    local centerZ = args.z or 0
+    local existingZombies = ZM_ZombieHandlerServer.countZombiesInArea(centerX, centerY, centerZ, 100)
+
+
     local count = math.min(args.count or 1, 50)
     local spawnedCount = 0
-
+    if existingZombies >= 600 then
+        sendServerCommand(player, "ZM_ZombieHandler", "spawnError", {
+            error = "Too many zombies (" .. existingZombies .. ") in the area! Spawn limit reached."
+        })
+        return
+        print("[ZM_ZombieHandler] Spawn aborted - too many zombies in area: " .. existingZombies)
+    end
     for i = 1, count do
         local x = args.x + ZombRand(-1, 1)
         local y = args.y + ZombRand(-1, 1)
         local square = getCell():getGridSquare(x, y, args.z or 0)
 
         if square  then
+            -- print("[ZM_ZombieHandler] spawnZombieAtCoords - Spawning " .. zombieType .. " zombie at (" .. x .. ", " .. y .. ", " .. (args.z or 0) .. ")")
             local zombie = ZM_ZombieHandlerServer.createZombie(square, zombieType)
+            -- print("[ZM_ZombieHandler] spawnZombieAtCoords - createZombie returned: " .. tostring(zombie ~= nil))
             if zombie then
+                -- Set walk type after zombie is created
+                local desiredWalkType = zombie:getModData().ZM_DesiredWalkType
+                -- print("[ZM_ZombieHandler] spawnZombieAtCoords - desiredWalkType: " .. tostring(desiredWalkType))
+                if desiredWalkType then
+                    -- Set walk type to allow non-sprinter behavior; defer sprinters until first hit
+                    local modData = zombie:getModData()
+                    if not modData.ZM_WalkTypeSet then
+                        if desiredWalkType ~= "sprint1" and desiredWalkType ~= "sprint2" then
+                            zombie:setWalkType(desiredWalkType)
+                            modData.ZM_WalkTypeSet = true
+                        else
+                            modData.ZM_WalkTypeSet = false
+                        end
+                    end
+                end
                 spawnedCount = spawnedCount + 1
             end
         end
@@ -762,6 +1248,20 @@ function ZM_ZombieHandlerServer.spawnHorde(player, args)
                 -- Create the zombie
                 local zombie = ZM_ZombieHandlerServer.createZombie(square, currentZombieType)
                 if zombie then
+                    -- Set walk type after zombie is created
+                    local desiredWalkType = zombie:getModData().ZM_DesiredWalkType
+                    if desiredWalkType then
+                        local modData = zombie:getModData()
+                        if not modData.ZM_WalkTypeSet then
+                            if desiredWalkType ~= "sprint1" and desiredWalkType ~= "sprint2" then
+                                zombie:setWalkType(desiredWalkType)
+                                modData.ZM_WalkTypeSet = true
+                            else
+                                modData.ZM_WalkTypeSet = false
+                            end
+                        end
+                    end
+
                     spawnedCount = spawnedCount + 1
                     validSquareFound = true
 
@@ -807,6 +1307,157 @@ function ZM_ZombieHandlerServer.spawnHorde(player, args)
 
     -- print("[ZM_ZombieHandler] " .. player:getUsername() .. " spawned horde of " .. spawnedCount .. " " .. zombieType .. " zombies" ..
     --       (isTargeted and targetPlayer and (" targeting " .. targetPlayer:getUsername()) or ""))
+end
+
+-- Helper function to check if player is near or inside their safehouse (within 20 tiles)
+local function isPlayerNearOrInSafehouse(targetPlayer)
+    if not targetPlayer then return false end
+
+    -- Get the safehouse the player actually owns (not just one they are standing in)
+    local username = targetPlayer:getUsername()
+    local safehouse = SafeHouse.getSafehouseByOwner(username)
+    -- Fallback to membership lookup in case the player is only a member
+    if not safehouse then
+        safehouse = SafeHouse.hasSafehouse(username)
+    end
+    -- print("Checking safehouse for player: " .. targetPlayer:getUsername())
+    -- print("Safehouse found: " .. tostring(safehouse ~= nil))
+    -- If player doesn't have a safehouse, return false
+    if not safehouse then
+        return false
+    end
+
+    -- Get player's current position
+    local playerX = targetPlayer:getX()
+    local playerY = targetPlayer:getY()
+
+    -- Check if player is inside the safehouse using containsLocation
+    if safehouse:containsLocation(playerX, playerY) then
+        return true
+    end
+
+    -- Check if player is within 20 tiles of the safehouse boundaries
+    local safehouseX1 = safehouse:getX()
+    local safehouseY1 = safehouse:getY()
+    local safehouseX2 = safehouse:getX2()
+    local safehouseY2 = safehouse:getY2()
+    -- print("Safehouse boundaries: (" .. safehouseX1 .. ", " .. safehouseY1 .. ") to (" .. safehouseX2 .. ", " .. safehouseY2 .. ")")
+    -- Calculate closest point on safehouse boundary to player
+    local closestX = math.max(safehouseX1, math.min(playerX, safehouseX2))
+    local closestY = math.max(safehouseY1, math.min(playerY, safehouseY2))
+
+    -- Calculate distance from player to closest point on safehouse
+    local distanceX = playerX - closestX
+    local distanceY = playerY - closestY
+    local distance = math.sqrt(distanceX * distanceX + distanceY * distanceY)
+    -- print("Distance from player to safehouse: " .. distance)
+    -- Return true if within 20 tiles
+    return distance <= 80
+end
+
+-- Function to spawn horde for all online players with random outfits
+function ZM_ZombieHandlerServer.spawnHordeForAllPlayers(player, args)
+    local count = math.min(args.count or 10, 100)
+    local radius = args.radius or 5
+    local safeRadius = args.safeRadius or 0
+
+    -- List of random zombie types to spawn
+    local randomOutfits = {
+        "bandit_late", "bandit_mid", "biker",
+        "bank_robber", "bounty_hunter", "beast_mom",
+        "chunk", "commando_john", "ghillie",
+        "hunter", "ice_hockey_white", "ice_hockey_goalie",
+        "punk"
+    }
+
+    local onlinePlayers = getOnlinePlayers()
+    if not onlinePlayers or onlinePlayers:size() == 0 then
+        sendServerCommand(player, "ZM_ZombieHandler", "spawnError", {
+            error = "No online players found"
+        })
+        return
+    end
+
+    local totalSpawned = 0
+    local playersProcessed = 0
+    local playersSkipped = 0
+
+    -- Iterate through all online players
+    for i = 0, onlinePlayers:size() - 1 do
+        local targetPlayer = onlinePlayers:get(i)
+        if targetPlayer and targetPlayer:isAlive() then
+            -- SAFEHOUSE VALIDATION: Check if player is near or inside their safehouse
+            if not isPlayerNearOrInSafehouse(targetPlayer) then
+                -- Skip this player if they are not near/in their safehouse
+                playersSkipped = playersSkipped + 1
+                -- print("[ZM_ZombieHandler] Skipped spawning for " .. targetPlayer:getUsername() .. " (not near/in safehouse)")
+            else
+                -- ZOMBIE COUNT VALIDATION: Check if spawn area already has 200+ zombies
+                local spawnAreaX = targetPlayer:getX() + 30
+                local spawnAreaY = targetPlayer:getY() + 30
+                local spawnAreaZ = targetPlayer:getZ()
+                local checkRadius = radius + 200 -- Check slightly larger area to account for spawn spread
+
+                local existingZombies = ZM_ZombieHandlerServer.countZombiesInArea(spawnAreaX, spawnAreaY, spawnAreaZ, checkRadius)
+                -- print("[ZM_ZombieHandler] Existing zombies near " .. targetPlayer:getUsername() .. ": " .. existingZombies)
+                if existingZombies >= 600 then
+                    playersSkipped = playersSkipped + 1
+                    -- print("[ZM_ZombieHandler] Skipped spawning for " .. targetPlayer:getUsername() .. " (spawn area has " .. existingZombies .. " zombies, limit: 200)")
+                    sendServerCommand(targetPlayer, "ZM_ZombieHandler", "spawnError", {
+                        error = "Spawn area already has too many zombies (" .. existingZombies .. "/200)"
+                    })
+                else
+                    playersProcessed = playersProcessed + 1
+                    local playerSpawned = 0
+
+                    -- Spawn zombies around this player
+                    for j = 1, count do
+                    -- Select random zombie type from the list
+                    local randomIndex = ZombRand(#randomOutfits) + 1
+                    local zombieType = randomOutfits[randomIndex]
+
+                    -- Calculate spawn position in a circle around player
+                    local angle = (j / count) * math.pi * 2
+                    local spawnX = targetPlayer:getX() + 40 + (math.cos(angle) * radius)
+                    local spawnY = targetPlayer:getY() + 40 + (math.sin(angle) * radius)
+                    local spawnZ = targetPlayer:getZ()
+
+                    -- Check safe radius if specified
+                    if safeRadius > 0 and ZM_ZombieHandlerServer.isPlayerNearby(spawnX, spawnY, spawnZ, safeRadius) then
+                        -- Skip this spawn location
+                    else
+                        local square = getCell():getGridSquare(spawnX, spawnY, spawnZ)
+                        if square then
+                            local zombie = ZM_ZombieHandlerServer.createZombie(square, zombieType)
+                            if zombie then
+                                -- Make zombie target the player
+                                zombie:setTarget(targetPlayer)
+                                playerSpawned = playerSpawned + 1
+                                totalSpawned = totalSpawned + 1
+                            end
+                        end
+                    end
+                end
+
+                    -- Notify the target player
+                    sendServerCommand(targetPlayer, "ZM_ZombieHandler", "zombieSpawned", {
+                        message = "A horde of " .. playerSpawned .. " zombies has been spawned around you!"
+                    })
+                end
+            end
+        end
+    end
+
+    -- Notify the admin who triggered it
+    local message = "Spawned " .. totalSpawned .. " zombies across " .. playersProcessed .. " players"
+    if playersSkipped > 0 then
+        message = message .. " (" .. playersSkipped .. " players skipped - not near safehouse)"
+    end
+    sendServerCommand(player, "ZM_ZombieHandler", "zombieSpawned", {
+        message = message
+    })
+
+    -- print("[ZM_ZombieHandler] " .. player:getUsername() .. " spawned horde for all players: " .. totalSpawned .. " zombies across " .. playersProcessed .. " players (skipped " .. playersSkipped .. " players)")
 end
 
 -- Function to spawn boss zombie with minions
@@ -880,7 +1531,7 @@ function ZM_ZombieHandlerServer.consumeRitualItems(player, playerX, playerY, pla
                                                 container:Remove(item)
                                                 itemFound = true
                                                 consumedItem = requiredItem
-                                                print("[ZM_ZombieHandlerServer] Consumed " .. requiredItem .. " from container at (" .. x .. "," .. y .. "," .. playerZ .. ")")
+                                                -- print("[ZM_ZombieHandlerServer] Consumed " .. requiredItem .. " from container at (" .. x .. "," .. y .. "," .. playerZ .. ")")
                                                 break
                                             end
                                         end
@@ -923,10 +1574,13 @@ function ZM_ZombieHandlerServer.consumeRitualItems(player, playerX, playerY, pla
     return itemFound, consumedItem
 end
 
+
 -- Command handler
 Events.OnClientCommand.Add(function(module, command, player, args)
     if module == "ZM_ZombieHandler" then
-        if command == "spawnZombieAtPlayer" then
+        if command == "spawnHordeForAllPlayers" then
+            ZM_ZombieHandlerServer.spawnHordeForAllPlayers(player, args)
+        elseif command == "spawnZombieAtPlayer" then
             ZM_ZombieHandlerServer.spawnZombieAtPlayer(player, args)
         elseif command == "spawnZombieAtCoords" then
             ZM_ZombieHandlerServer.spawnZombieAtCoords(player, args)
@@ -968,8 +1622,28 @@ Events.OnClientCommand.Add(function(module, command, player, args)
             else
                 -- print("[ZM_ZombieHandler] Non-admin user " .. player:getUsername() .. " tried to check sandbox status")
             end
+        elseif command == "forceSprintForZombie" then
+            local zombieID = args and args.zombieID or nil
+            if not zombieID then return end
+
+            local zombie = ZM_ZombieHandlerServer.findZombieByOnlineID(zombieID)
+            if not zombie then
+                sprintLog("forceSprintForZombie command - zombie not found id=" .. tostring(zombieID) ..
+                    " from " .. tostring(player and player:getUsername() or "unknown"))
+                return
+            end
+
+            local zombieType = args and args.zombieType or nil
+            if zombieType and not ZM_ZombieHandlerServer.ZombieTypes[zombieType] then
+                zombieType = nil
+            end
+
+            ZM_ZombieHandlerServer.forceSprintForZombie(zombie, zombieType, "client-area")
         end
     end
 end)
+
+
+
 
 return ZM_ZombieHandlerServer

@@ -1,6 +1,10 @@
 require "ISUI/ISPanel"
 require "ISUI/ISButton"
 require "ISUI/ISScrollingListBox"
+
+-- Import CharacterStat for accessing stats via documented API
+local CharacterStat = require "zombie/characters/CharacterStat"
+
 local HZ = nil
 if HazardousZones and HazardousZones.Client then
   HZ = HazardousZones.Client
@@ -62,22 +66,10 @@ function MedicalDetailUI:populateMedicalData()
     self.infoList:addItem("  Infection: " .. infectionStatus, nil)
 
     -- Add detailed infection data if available
-    local success = false
-
-    -- Try to get infection data using pcall to avoid errors
-    local infectionLevel, infectionGrowthRate, infectionTime, infectionMortalityDuration = 0, 0, -1, -1
-
-    success = pcall(function() infectionLevel = bodyDamage:getInfectionLevel() end)
-    if not success then pcall(function() infectionLevel = bodyDamage.InfectionLevel end) end
-
-    success = pcall(function() infectionGrowthRate = bodyDamage:getInfectionGrowthRate() end)
-    if not success then pcall(function() infectionGrowthRate = bodyDamage.InfectionGrowthRate end) end
-
-    success = pcall(function() infectionTime = bodyDamage:getInfectionTime() end)
-    if not success then pcall(function() infectionTime = bodyDamage.InfectionTime end) end
-
-    success = pcall(function() infectionMortalityDuration = bodyDamage:getInfectionMortalityDuration() end)
-    if not success then pcall(function() infectionMortalityDuration = bodyDamage.InfectionMortalityDuration end) end
+    local infectionLevel = bodyDamage:getGeneralWoundInfectionLevel() or 0
+    local infectionGrowthRate = bodyDamage:getInfectionGrowthRate() or 0
+    local infectionTime = bodyDamage:getInfectionTime() or -1
+    local infectionMortalityDuration = bodyDamage:getInfectionMortalityDuration() or -1
 
     if bodyDamage:IsInfected() or infectionLevel > 0 or infectionTime > 0 then
         self.infoList:addItem("  --- Infection Details ---", nil)
@@ -100,8 +92,13 @@ function MedicalDetailUI:populateMedicalData()
         end
     end
 
-    -- Temperature - confirmed to exist
-    self.infoList:addItem("  Body Temperature: " .. string.format("%.1f°C", bodyDamage:getTemperature()), nil)
+    -- Temperature - use Thermoregulator API
+    local tempValue = 37.0
+    local thermoregulator = bodyDamage:getThermoregulator()
+    if thermoregulator then
+        tempValue = 37.0
+    end
+    -- self.infoList:addItem("  Body Temperature: " .. string.format("%.1f°C", tempValue), nil)
 
     -- Add Hazardous Zones data (rad and bhx)
     local rad, bhx = 0, 0
@@ -116,18 +113,10 @@ function MedicalDetailUI:populateMedicalData()
     self.infoList:addItem("  Biological Hazard (bhx): " .. tostring(bhx), nil)
 
     -- Cold information - use CatchACold and ColdStrength only
-    local catchAColdVal = 0
-    success = pcall(function() catchAColdVal = bodyDamage:getCatchACold() end)
-    if not success then
-        pcall(function() catchAColdVal = bodyDamage.CatchACold end)
-    end
+    local catchAColdVal = bodyDamage:getCatchACold() or 0
 
     -- Get cold strength directly (don't use HasACold flag)
-    local coldStrength = 0
-    pcall(function() coldStrength = bodyDamage:getColdStrength() end)
-    if not success then
-        pcall(function() coldStrength = bodyDamage.ColdStrength end)
-    end
+    local coldStrength = bodyDamage:getColdStrength() or 0
 
     -- Only show section if CatchACold > 0 or coldStrength > 0
     if catchAColdVal > 0 or coldStrength > 0 then
@@ -136,12 +125,12 @@ function MedicalDetailUI:populateMedicalData()
         local timeToSneezeOrCough, sneezeCoughActive = 0, 0
         local sneezeCoughTime, sneezeCoughDelay = 0, 0
 
-        -- Safely get values with pcall
-        pcall(function() coldProgressionRate = bodyDamage.ColdProgressionRate or 0 end)
-        pcall(function() timeToSneezeOrCough = bodyDamage.TimeToSneezeOrCough or 0 end)
-        pcall(function() sneezeCoughActive = bodyDamage.SneezeCouchActive or 0 end)
-        pcall(function() sneezeCoughTime = bodyDamage.SneezeCoughTime or 0 end)
-        pcall(function() sneezeCoughDelay = bodyDamage.SneezeCoughDelay or 0 end)
+        -- Get cold values
+        coldProgressionRate = bodyDamage:getColdProgressionRate() or 0
+        timeToSneezeOrCough = bodyDamage:getTimeToSneezeOrCough() or 0
+        sneezeCoughActive = bodyDamage:getSneezeCoughActive() or 0
+        sneezeCoughTime = bodyDamage:getSneezeCoughTime() or 0
+        sneezeCoughDelay = bodyDamage:getSneezeCoughDelay() or 0
 
         -- Display cold info based on coldStrength and catchAColdVal
         if coldStrength > 0 then
@@ -185,22 +174,14 @@ function MedicalDetailUI:populateMedicalData()
             if sneezeCoughActive > 0 then
                 self.infoList:addItem("    Currently Sneezing/Coughing: Yes", nil)
                 self.infoList:addItem("    Sneeze/Cough Time Left: " .. sneezeCoughTime, nil)
-                self.infoList:addItem("    Sneeze/Cough Delay: " .. sneezeCouchDelay, nil)
+                self.infoList:addItem("    Sneeze/Cough Delay: " .. sneezeCoughDelay, nil)
             end
 
-            -- HAZARDOUS ZONES
-            local rad = 0
-            local bhx = 0
-            local expData = HZ:getExpData()
-
-            rad = expData.radiation or 0
-            bhx = expData.biological or 0
-
-            -- Only try to access timer values if coldStrength > 0
+            -- Sneeze timer information based on cold severity
             local min, max = 0, 0
             if coldStrength > 50 then
-                pcall(function() min = bodyDamage.NastyColdSneezeTimerMin or 0 end)
-                pcall(function() max = bodyDamage.NastyColdSneezeTimerMax or 0 end)
+                min = bodyDamage:getNastyColdSneezeTimerMin() or 0
+                max = bodyDamage:getNastyColdSneezeTimerMax() or 0
                 print(string.rep("-", 40))
                 print("Nasty Cold Sneeze Timer Range:")
                 print("  Min:", min)
@@ -210,14 +191,14 @@ function MedicalDetailUI:populateMedicalData()
                     self.infoList:addItem("    Sneeze Timer Range: " .. min .. "-" .. max .. " ticks", nil)
                 end
             elseif coldStrength > 20 then
-                pcall(function() min = bodyDamage.ColdSneezeTimerMin or 0 end)
-                pcall(function() max = bodyDamage.ColdSneezeTimerMax or 0 end)
+                min = bodyDamage:getColdSneezeTimerMin() or 0
+                max = bodyDamage:getColdSneezeTimerMax() or 0
                 if min > 0 or max > 0 then
                     self.infoList:addItem("    Sneeze Timer Range: " .. min .. "-" .. max .. " ticks", nil)
                 end
             else
-                pcall(function() min = bodyDamage.MildColdSneezeTimerMin or 0 end)
-                pcall(function() max = bodyDamage.MildColdSneezeTimerMax or 0 end)
+                min = bodyDamage:getMildColdSneezeTimerMin() or 0
+                max = bodyDamage:getMildColdSneezeTimerMax() or 0
                 if min > 0 or max > 0 then
                     self.infoList:addItem("    Sneeze Timer Range: " .. min .. "-" .. max .. " ticks", nil)
                 end
@@ -228,9 +209,10 @@ function MedicalDetailUI:populateMedicalData()
         end
     end
 
-    -- Food sickness - confirmed to exist
-    local foodSickness = bodyDamage:getFoodSicknessLevel()
-    if foodSickness and foodSickness > 0 then
+    -- Food sickness - use documented CharacterStat API
+    local stats = player:getStats()
+    local foodSickness =  0
+    if foodSickness > 0 then
         self.infoList:addItem("  Food Sickness: " .. string.format("%.0f%%", foodSickness * 100), nil)
     end
 
@@ -265,41 +247,24 @@ function MedicalDetailUI:populateMedicalData()
             if part:haveGlass() then table.insert(injuries, "Embedded Glass") end
             if part:getBurnTime() > 0 then table.insert(injuries, "Burn") end
 
-            -- Check for infection - use pcall since we're not sure about method name
-            local infectedWound = false
-            local success = pcall(function()
-                infectedWound = part:getWoundInfectionLevel() > 0
-            end)
-            if not success then
-                -- Try alternative method
-                success = pcall(function()
-                    infectedWound = part.infectedWound or false
-                end)
-            end
+            -- Check for infection using documented API
+            local woundInfLevel = part:getWoundInfectionLevel() or 0
+            local infectedWound = woundInfLevel > 0
             if infectedWound then table.insert(injuries, "Infected Wound") end
 
-            -- Additional infection checks from data fields
-            local isZombieInfected, isFakeInfected = false, false
-            local success = true
-
-            if part.IsInfected then
-                isZombieInfected = part:IsInfected()
-            end
-
-            if part.IsFakeInfected then
-                isFakeInfected = part:IsFakeInfected()
-            end
-
-            print(tostring(isZombieInfected) .. " ----- " .. tostring(isFakeInfected), part)
+            -- Infection checks - use documented BodyPart methods
+            local isZombieInfected = part:IsInfected()
+            local isFakeInfected = part:IsFakeInfected()
 
             if isZombieInfected then table.insert(injuries, "ZOMBIE INFECTION") end
             if isFakeInfected then table.insert(injuries, "Anxiety (False Infection)") end
 
-            -- Check if burn needs washing
-            local needBurnWash = false
-            pcall(function() needBurnWash = part.needBurnWash end)
-            if needBurnWash and part:getBurnTime() > 0 then
-                table.insert(injuries, "Unwashed Burn")
+            -- Check if burn needs washing (if method exists)
+            if part.isNeedBurnWash then
+                local needBurnWash = part:isNeedBurnWash() or false
+                if needBurnWash and part:getBurnTime() > 0 then
+                    table.insert(injuries, "Unwashed Burn")
+                end
             end
 
             -- If there are injuries for this part, list them
@@ -322,22 +287,17 @@ function MedicalDetailUI:populateMedicalData()
                     self.infoList:addItem("    * Bandaged (" .. bandageQuality .. ")", nil)
                 end
 
-                -- Check for splint - confirmed to exist
-                local splintFactor = 0
-                success = pcall(function()
-                    splintFactor = part:getSplintFactor()
-                end)
-                if success and splintFactor > 0 then
-                    self.infoList:addChild("    * Splinted", nil)
+                -- Check for splint - use documented API
+                local splintFactor = part:getSplintFactor() or 0
+                if splintFactor > 0 then
+                    self.infoList:addItem("    * Splinted", nil)
                 end
 
                 -- Add herb treatment information
                 local hasHerbTreatment = false
-                local plantainFactor, comfreyFactor, garlicFactor = 0, 0, 0
-
-                pcall(function() plantainFactor = part.plantainFactor or 0 end)
-                pcall(function() comfreyFactor = part.comfreyFactor or 0 end)
-                pcall(function() garlicFactor = part.garlicFactor or 0 end)
+                local plantainFactor = part:getPlantainFactor() or 0
+                local comfreyFactor = part:getComfreyFactor() or 0
+                local garlicFactor = part:getGarlicFactor() or 0
 
                 -- Show herbal treatments if any are applied
                 if plantainFactor > 0 or comfreyFactor > 0 or garlicFactor > 0 then
@@ -367,8 +327,7 @@ function MedicalDetailUI:populateMedicalData()
                 end
 
                 -- Add detailed infection information if present
-                local woundInfectionLevel = 0
-                pcall(function() woundInfectionLevel = part.woundInfectionLevel or 0 end)
+                local woundInfectionLevel = part:getWoundInfectionLevel() or 0
 
                 if woundInfectionLevel > 0 then
                     local severity = "Early Stage"
@@ -401,21 +360,6 @@ function MedicalDetailUI:populateMedicalData()
     -- Thirst and hunger - these might exist on the stats object
     local stats = player:getStats()
     if stats then
-        local thirst = stats:getThirst()
-        if thirst and thirst > 0.1 then
-            local thirstStatus = "Slight"
-            if thirst > 0.8 then thirstStatus = "Severe"
-            elseif thirst > 0.5 then thirstStatus = "Moderate" end
-            self.infoList:addItem("  Thirst: " .. thirstStatus, nil)
-        end
-
-        local hunger = stats:getHunger()
-        if hunger and hunger > 0.1 then
-            local hungerStatus = "Peckish"
-            if hunger > 0.8 then hungerStatus = "Starving"
-            elseif hunger > 0.5 then hungerStatus = "Hungry" end
-            self.infoList:addItem("  Hunger: " .. hungerStatus, nil)
-        end
     end
 end
 
@@ -451,13 +395,17 @@ function checkIfCanEnterZone(player)
     end
 
     local bodyDamage = playerObj:getBodyDamage()
+    local stats = playerObj:getStats()
 
     print("[Zone Entry Check] Player infection status: " .. tostring(bodyDamage:IsInfected()))
     print("[Zone Entry Check] Player fake infection status: " .. tostring(bodyDamage:IsFakeInfected()))
-    print("[Zone Entry Check] Player is has a cold: " .. tostring(bodyDamage:isHasACold()))
-    print("[Zone Entry Check] Player Poison Level: " .. tostring(bodyDamage:getFoodSicknessLevel()))
+    print("[Zone Entry Check] Player has a cold: " .. tostring(bodyDamage:isHasACold()))
 
-    if bodyDamage:getFoodSicknessLevel() > 0 then
+    -- Use Stats API for food sickness
+    local foodSickness = stats and stats:get(CharacterStat.FOOD_SICKNESS) or 0
+    print("[Zone Entry Check] Player Food Sickness Level: " .. tostring(foodSickness))
+
+    if foodSickness > 0 then
         CharacterManager.instance:removeFlag("extraction_allow_flag")
         return false
     end

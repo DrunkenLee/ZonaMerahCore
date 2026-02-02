@@ -6,7 +6,7 @@ ZM_ZombieHandler.ZombieTypes = {
         health = 200,
         strength = 100,
         fitness = 4,
-        walkType = "sprint1",
+        walkType = "WTSprint2",
         canSprint = true,
         outfit = "ArmyCamoGreen",
         profession = "Soldier"
@@ -24,7 +24,7 @@ ZM_ZombieHandler.ZombieTypes = {
         health = 180,
         strength = 4,
         fitness = 3,
-        walkType = "sprint1",
+        walkType = "WTSprint2",
         canSprint = true,
         outfit = "Screamer1",
         profession = "Unemployed"
@@ -33,7 +33,7 @@ ZM_ZombieHandler.ZombieTypes = {
         health = 200,
         strength = 5,
         fitness = 4,
-        walkType = "sprint2",
+        walkType = "WTSprint2",
         canSprint = true,
         outfit = "Screamer2",
         profession = "Unemployed"
@@ -55,9 +55,136 @@ ZM_ZombieHandler.ZombieTypes = {
         canSprint = true,
         outfit = "Psycho2",
         profession = "Unemployed"
+    },
+    ["bandit_late"] = {
+        health = 150,
+        strength = 40,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Bandit_Late",
+        profession = "Unemployed"
+    },
+    ["bandit_mid"] = {
+        health = 140,
+        strength = 35,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Bandit_Mid",
+        profession = "Unemployed"
+    },
+    ["biker"] = {
+        health = 160,
+        strength = 45,
+        fitness = 3,
+        walkType = "sprint1",
+        canSprint = true,
+        outfit = "Biker",
+        profession = "Unemployed"
+    },
+    ["monster_bride"] = {
+        health = 100,
+        strength = 45,
+        fitness = 3,
+        walkType = "sprint2",
+        canSprint = true,
+        outfit = "CostumeMonsterBride",
+        profession = "Unemployed"
     }
 }
 
+-- Sprint area enforcement (client -> server)
+ZM_ZombieHandler.SprintArea = ZM_ZombieHandler.SprintArea or {
+    x1 = 838,
+    x2 = 3227,
+    y1 = 5318,
+    y2 = 7468
+}
+ZM_ZombieHandler.SprintAreaDebug = (ZM_ZombieHandler.SprintAreaDebug ~= false)
+ZM_ZombieHandler._sprintAreaCooldown = ZM_ZombieHandler._sprintAreaCooldown or {}
+ZM_ZombieHandler._sprintAreaLastIn = ZM_ZombieHandler._sprintAreaLastIn or false
+ZM_ZombieHandler._sprintAreaOutfitToType = ZM_ZombieHandler._sprintAreaOutfitToType or nil
+
+local function sprintAreaLog(message)
+    if ZM_ZombieHandler.SprintAreaDebug then
+        print("[ZM_ZombieHandler] " .. message)
+    end
+end
+
+local function isInSprintArea(x, y)
+    local area = ZM_ZombieHandler.SprintArea
+    if not area then return false end
+    return x >= area.x1 and x <= area.x2 and y >= area.y1 and y <= area.y2
+end
+
+local function buildOutfitToType()
+    local map = {}
+    for zombieType, data in pairs(ZM_ZombieHandler.ZombieTypes) do
+        if data and data.outfit then
+            map[data.outfit] = zombieType
+        end
+    end
+    ZM_ZombieHandler._sprintAreaOutfitToType = map
+end
+
+local function getZombieTypeFromOutfit(outfit)
+    if not outfit then return nil end
+    if not ZM_ZombieHandler._sprintAreaOutfitToType then
+        buildOutfitToType()
+    end
+    return ZM_ZombieHandler._sprintAreaOutfitToType[outfit]
+end
+
+local function isSprintType(zombieType)
+    local data = ZM_ZombieHandler.ZombieTypes[zombieType]
+    if not data then return false end
+    return data.canSprint == true and (data.walkType == "sprint1" or data.walkType == "sprint2")
+end
+
+local function onSprintAreaZombieUpdate(zed)
+    if not zed or zed:isDead() then return end
+    local player = getPlayer()
+    if not player then return end
+
+    local px, py = player:getX(), player:getY()
+    local inArea = isInSprintArea(px, py)
+    if ZM_ZombieHandler._sprintAreaLastIn ~= inArea then
+        ZM_ZombieHandler._sprintAreaLastIn = inArea
+        sprintAreaLog("Player " .. (inArea and "entered" or "left") ..
+            " sprint area at (" .. math.floor(px) .. "," .. math.floor(py) .. ")")
+    end
+    if not inArea then return end
+
+    local zx, zy = zed:getX(), zed:getY()
+    if not isInSprintArea(zx, zy) then return end
+
+    local outfit = zed:getOutfitName()
+    local zombieType = getZombieTypeFromOutfit(outfit)
+    if not zombieType or not isSprintType(zombieType) then return end
+
+    local zombieID = zed.getOnlineID and zed:getOnlineID() or nil
+    if not zombieID or zombieID == 0 then return end
+
+    local now = getGameTime():getWorldAgeSeconds()
+    local lastSent = ZM_ZombieHandler._sprintAreaCooldown[zombieID] or 0
+    if (now - lastSent) < 5 then
+        return
+    end
+    ZM_ZombieHandler._sprintAreaCooldown[zombieID] = now
+
+    sendClientCommand("ZM_ZombieHandler", "forceSprintForZombie", {
+        zombieID = zombieID,
+        zombieType = zombieType,
+        outfit = outfit,
+        x = zx,
+        y = zy,
+        z = zed:getZ()
+    })
+
+    sprintAreaLog("Requested sprint for zombie id=" .. zombieID ..
+        ", type=" .. zombieType .. ", outfit=" .. tostring(outfit))
+end
 
 -- This is defined outside any function (global scope)
 local soundFunction = function()
@@ -254,12 +381,38 @@ function ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, 
     return true
 end
 
+-- Function to spawn horde for all online players with random outfits
+function ZM_ZombieHandler.spawnHordeForAllPlayers(count, radius, safeRadius)
+    local player = getPlayer()
+    if not player then
+        print("Error: No player found")
+        return false
+    end
+
+    count = count or 10
+    radius = radius or 5
+    safeRadius = safeRadius or 0
+
+    sendClientCommand("ZM_ZombieHandler", "spawnHordeForAllPlayers", {
+        username = player:getUsername(),
+        count = count,
+        radius = radius,
+        safeRadius = safeRadius
+    })
+
+    print("Requesting horde for all online players...")
+    return true
+end
+
 -- Console wrapper functions
 function ZM_ZombieHandler.consoleSpawnZombie(zombieType, count, safeRadius)
     return ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, count, safeRadius)
 end
 function ZM_ZombieHandler.consoleSpawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety, safeRadius)
     return ZM_ZombieHandler.spawnHorde(count, radius, isTargeted, targetUsername, zombieType, addVariety, safeRadius)
+end
+function ZM_ZombieHandler.consoleSpawnHordeForAllPlayers(count, radius, safeRadius)
+    return ZM_ZombieHandler.spawnHordeForAllPlayers(count, radius, safeRadius)
 end
 
 -- Function to open the Zombie Spawner UI
@@ -322,59 +475,26 @@ function ZM_ZombieHandler.checkSandboxStatus()
     return true
 end
 
--- Add zombie spawn options to player context menu
-function ZM_ZombieHandler.addZombieSpawnMenu(playerIndex, context)
-    local player = getSpecificPlayer(playerIndex)
-    if not player then return end
+-- Find a nearby zombie by online ID (client-side)
+function ZM_ZombieHandler.findLocalZombieByOnlineID(onlineID)
+    if not onlineID then return nil end
+    local player = getPlayer()
+    if not player then return nil end
+    local localList = player:getLocalList()
+    if not localList then return nil end
 
-    -- Only show for admins
-    if not player:isAccessLevel("admin") then return end
-
-    local zombieMenu = context:addOption("Zombie Spawner")
-    local zombieSubMenu = ISContextMenu:getNew(context)
-    context:addSubMenu(zombieMenu, zombieSubMenu)
-
-    -- Add single zombie spawns
-    for zombieType, _ in pairs(ZM_ZombieHandler.ZombieTypes) do
-        zombieSubMenu:addOption(
-            "Spawn " .. zombieType .. " zombie",
-            player,
-            function()
-                ZM_ZombieHandler.spawnZombieAtPlayer(zombieType, 1)
+    for i = 0, localList:size() - 1 do
+        local obj = localList:get(i)
+        if obj and instanceof(obj, "IsoZombie") then
+            if obj:getOnlineID() == onlineID then
+                return obj
             end
-        )
+        end
     end
 
-    -- Add separator
-    zombieSubMenu:addOption("─────────────────")
-
-    -- Add horde options
-    zombieSubMenu:addOption(
-        "Spawn Small Horde (5)",
-        player,
-        function()
-            ZM_ZombieHandler.spawnHorde(5, 3)
-        end
-    )
-
-    zombieSubMenu:addOption(
-        "Spawn Medium Horde (15)",
-        player,
-        function()
-            ZM_ZombieHandler.spawnHorde(15, 5)
-        end
-    )
-
-    zombieSubMenu:addOption(
-        "Spawn Large Horde (30)",
-        player,
-        function()
-            ZM_ZombieHandler.spawnHorde(30, 8)
-        end
-    )
+    return nil
 end
 
--- Handle server responses
 Events.OnServerCommand.Add(function(module, command, args)
     if module == "ZM_ZombieHandler" then
         if command == "zombieSpawned" then
@@ -386,16 +506,13 @@ Events.OnServerCommand.Add(function(module, command, args)
                 local pulseCount = 0
                 local maxPulses = 5  -- 5 pulses over 5 minutes
 
-                -- Make initial sound immediately
-                MakeWorldSound(player, 120, 100)
-                -- player:Say("Zombies are being attracted to this area!")
-
-                -- Create a named function we can reference for removal
-                local soundPulser = nil
+                local soundPulser
                 soundPulser = function()
                     -- Safety check
                     if not player or not player:isAlive() then
-                        Events.EveryOneMinute.Remove(soundPulser)
+                        if soundPulser then
+                            Events.EveryOneMinute.Remove(soundPulser)
+                        end
                         print("Player not valid, stopping sound pulse")
                         return
                     end
@@ -404,7 +521,7 @@ Events.OnServerCommand.Add(function(module, command, args)
                     pulseCount = pulseCount + 1
 
                     -- Make sound
-                    MakeWorldSound(player, 120, 100)
+                    addSound(player, player:getX(), player:getY(), player:getZ(), 120, 100)
 
                     -- Debug info
                     print("Sound pulse #" .. pulseCount .. " of " .. maxPulses)
@@ -416,7 +533,9 @@ Events.OnServerCommand.Add(function(module, command, args)
 
                     -- Check if we've reached the maximum
                     if pulseCount >= maxPulses then
-                        Events.EveryOneMinute.Remove(soundPulser)
+                        if soundPulser then
+                            Events.EveryOneMinute.Remove(soundPulser)
+                        end
                         -- player:Say("The attraction effect has ended")
                         print("Sound pulse sequence complete - reached max pulses")
                     end
@@ -431,8 +550,26 @@ Events.OnServerCommand.Add(function(module, command, args)
             if player and args.error then
                 -- player:Say("Error: " .. args.error)
             end
+        elseif command == "screamer1DamageResisted" then
+            local player = getPlayer()
+            if player and args.message then
+                player:Say(args.message)
+            end
+        elseif command == "syncZombieHealth" then
+            if args and args.zombieID and args.health then
+                local zombie = ZM_ZombieHandler.findLocalZombieByOnlineID(args.zombieID)
+                if zombie then
+                    zombie:setHealth(args.health)
+                elseif isDebugEnabled() then
+                    print("[ZM_ZombieHandler] syncZombieHealth - zombie not found for ID: " .. tostring(args.zombieID))
+                end
+            end
         end
     end
+end)
+
+Events.EveryOneMinute.Add(function(module, command, args)
+
 end)
 
 return ZM_ZombieHandler

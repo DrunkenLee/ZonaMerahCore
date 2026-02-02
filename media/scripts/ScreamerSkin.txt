@@ -3,20 +3,20 @@ module ScreamerModII {
 
 	item Screamer1
 	{
+		ItemType = base:clothing,
 		DisplayCategory = ZedDmg,
-		Type = Clothing,
 		ClothingItem = Screamer1,
 		BodyLocation = ZedDmg,
-		WorldRender = FALSE,
+		WorldRender = false,
 	}
 
 	item Screamer2
 	{
+		ItemType = base:clothing,
 		DisplayCategory = ZedDmg,
-		Type = Clothing,
 		ClothingItem = Screamer2,
 		BodyLocation = ZedDmg,
-		WorldRender = FALSE,
+		WorldRender = false,
 	}
 
 }

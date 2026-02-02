@@ -5,8 +5,9 @@ Events.OnGameStart.Add(function()
 
   function ISInventoryTransferAction:start()
       if self.srcContainer:getType() == "floor" then
+          local playerIsInVehicle = self.character:getVehicle() ~= nil
           local worldItem = self.item:getWorldItem()
-          if self.character:getVehicle() then
+          if playerIsInVehicle then
               self.character:StopAllActionQueue()
               local queue = ISTimedActionQueue.getTimedActionQueue(self.character)
               queue:clearQueue()
@@ -23,7 +24,9 @@ Events.OnGameStart.Add(function()
   end
 
   function ISInventoryTransferAction:update()
-      if self.srcContainer:getType() == "floor" and self.character:getVehicle() then
+
+      local playerIsInVehicle = self.character:getVehicle() ~= nil
+      if self.srcContainer:getType() == "floor" and playerIsInVehicle then
           self.character:StopAllActionQueue()
           local queue = ISTimedActionQueue.getTimedActionQueue(self.character)
           queue:clearQueue()
@@ -37,7 +40,8 @@ Events.OnGameStart.Add(function()
   end
 
   function ISInventoryTransferAction:perform()
-      if self.srcContainer:getType() == "floor" and self.character:getVehicle() then
+      local playerIsInVehicle = self.character:getVehicle() ~= nil
+      if self.srcContainer:getType() == "floor" and playerIsInVehicle then
           self.character:Say("Can't grab items from the ground while in a vehicle!")
           ISInventoryPage.dirtyUI()
           ISInventoryPage.refreshBackpacks()

@@ -8,7 +8,7 @@ ZMEquipmentHandler.isRestrictedGearAllowed(username, itemType) -- returns true i
 // ZMEquipmentHandler.setRestrictedGearAllow(getPlayer():getUsername(), "Base.ada_wong", true)
 // ZMPlayerInventoryHandler.StripPlayerInventory(getPlayer())
 
-// showMedicalDetailUI()
+showMedicalDetailUI()
 // ZM_MedicalCheck.checkMedicalStatus(getPlayer())
 
 
@@ -30,8 +30,8 @@ PlayerFlagHandler.setFlagOnPlayer("tester1", "godmode_allow", true)
 
 
 
-getPlayer():setHoursSurvived(123123)
-getPlayer():setZombieKills(123123)
+getPlayer():setHoursSurvived(0)
+getPlayer():setZombieKills(0)
 
 
 
@@ -70,6 +70,9 @@ MakeWorldSound(getPlayer(), 100, 100)
 
 ZM_ZombieHandler.consoleSpawnZombie("elite", 10, 10)
 ZM_ZombieHandler.consoleSpawnZombie("tank", 200, 70)
+
+ZM_ZombieHandler.consoleSpawnHordeForAllPlayers(200, 5, 0)
+ZM_ZombieHandler.spawnHordeForAllPlayers(count, radius, safeRadius)
 
 servermsg "i think we have 3 minutes to check the defences!"
 
@@ -237,3 +240,8 @@ ZM_TreeSpawnerClient.fillArea(19539, 15613, 19548, 15620, 0, 20)
 
 // remove zed vanilla 1 chunk
 SendCommandToServer(string.format("/removezombies -remove true"))
+
+
+sendClientCommand("ZonaMerahCore", "RequestInvisible", {
+            username = getPlayer():getUsername()
+        })

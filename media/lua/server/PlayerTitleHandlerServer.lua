@@ -9,7 +9,7 @@ function ServerPlayerTitleHandler.savePlayerTitle(player, args)
     local username = args.username
     local title = args.title
 
-    print("[ServerPlayerTitleHandler] Saving title " .. title .. " for player " .. username)
+    -- print("[ServerPlayerTitleHandler] Saving title " .. title .. " for player " .. username)
 
     local filePath = "server-player-titles.ini"
     local data = {}
@@ -38,7 +38,7 @@ function ServerPlayerTitleHandler.savePlayerTitle(player, args)
             fileWriter:write(user .. "," .. userTitle .. "\n")
         end
         fileWriter:close()
-        print("[ServerPlayerTitleHandler] Successfully saved title for " .. username)
+        -- print("[ServerPlayerTitleHandler] Successfully saved title for " .. username)
 
         -- Send confirmation back to client
         sendServerCommand(player, "PlayerTitleHandler", "titleSaveResponse", {
@@ -56,30 +56,59 @@ end
 
 -- Function to load the player's title from a file
 function ServerPlayerTitleHandler.loadPlayerTitle(player, args)
-    if not player then return 0 end
+    if not player then
+        print("[ServerPlayerTitleHandler] ERROR: No player provided")
+        return 0
+    end
 
     -- Use the username from args if provided, otherwise use the player's username
     local username = args and args.username or player:getUsername()
+    -- print("[ServerPlayerTitleHandler] Loading title for username: " .. username)
 
     local filePath = "server-player-titles.ini"
     local file = getFileReader(filePath, true)
     if not file then
+        print("[ServerPlayerTitleHandler] ERROR: Could not open file: " .. filePath)
+        sendServerCommand(player, "PlayerTitleHandler", "loadPlayerTitleResponse", {
+            username = username,
+            title = 0
+        })
         return 0
     end
 
+    -- print("[ServerPlayerTitleHandler] File opened successfully, reading lines...")
     local title = 0
+    local lineNumber = 0
     local line = file:readLine()
     while line do
+        lineNumber = lineNumber + 1
+        -- print("[ServerPlayerTitleHandler] Line " .. lineNumber .. ": '" .. line .. "'")
+
         local user, savedTitle = line:match("([^,]+),([^,]+)")
-        if user and user == username then
-            title = tonumber(savedTitle) or 0
-            break
+        -- print("[ServerPlayerTitleHandler] Parsed - User: '" .. tostring(user) .. "', SavedTitle: '" .. tostring(savedTitle) .. "'")
+
+        if user and savedTitle then
+            -- Trim any whitespace
+            user = user:match("^%s*(.-)%s*$")
+            savedTitle = savedTitle:match("^%s*(.-)%s*$")
+            -- print("[ServerPlayerTitleHandler] After trim - User: '" .. user .. "', SavedTitle: '" .. savedTitle .. "'")
+
+            if user == username then
+                title = tonumber(savedTitle) or 0
+                -- print("[ServerPlayerTitleHandler] MATCH FOUND! Title: " .. title)
+                break
+            else
+                -- print("[ServerPlayerTitleHandler] No match: '" .. user .. "' != '" .. username .. "'")
+            end
+        else
+            print("[ServerPlayerTitleHandler] WARNING: Failed to parse line " .. lineNumber)
         end
+
         line = file:readLine()
     end
     file:close()
 
-    print("[ServerPlayerTitleHandler] Loaded title " .. title .. " for player " .. username)
+    -- print("[ServerPlayerTitleHandler] Final result - Loaded title " .. title .. " for player " .. username)
 
     -- Send response back to client
     sendServerCommand(player, "PlayerTitleHandler", "loadPlayerTitleResponse", {
