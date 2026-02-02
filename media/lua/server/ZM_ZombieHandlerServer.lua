@@ -1,5 +1,8 @@
 ZM_ZombieHandlerServer = ZM_ZombieHandlerServer or {}
 
+-- NOTE: Using PZ's built-in round() function which returns Integer type
+-- Do NOT define custom round() as it returns Double type causing spawn errors
+
 -- Safe accessor for sandbox variables (works even early in server start)
 local function getSandboxVar(name, default)
     if SandboxVars and SandboxVars[name] ~= nil then
@@ -506,32 +509,45 @@ function ZM_ZombieHandlerServer.createZombie(square, zombieType)
 
     local x, y, z = square:getX(), square:getY(), square:getZ()
 
-    addZombiesInOutfit(
-        x, y, z, 1,  -- coordinates and count
-        zombieData.outfit or "Random",  -- outfit
-        0.5,  -- femChance
-        zombieData.isCrawler or false,  -- isCrawler
-        false,  -- isFallOnFront
-        false,  -- isFakeDead
-        false,  -- isKnockedDown
-        1.0
+    -- Convert coordinates to integers to avoid Double type issues
+    local ix = math.floor(x)
+    local iy = math.floor(y)
+    local iz = math.floor(z)
+
+    -- Use addZombiesInOutfitArea with explicit integer conversion
+    -- Signature: addZombiesInOutfitArea(int x1, int y1, int x2, int y2, int z, int totalZombies, String outfit, Integer femaleChance)
+    local zombieList = addZombiesInOutfitArea(
+        ix, iy,         -- x1, y1 (start coordinates) - integers
+        ix, iy,         -- x2, y2 (end coordinates - same as start for single tile) - integers
+        iz,             -- z level - integer
+        1,              -- totalZombies - integer
+        zombieData.outfit or "Random",  -- outfit - string
+        nil             -- femaleChance - nil means random (or use 50)
     )
 
-    print("[ZM_ZombieHandlerServer] Spawned " .. zombieData.outfit .. " zombie at (" .. round(x) .. ", " .. round(y) .. ", " .. round(z) .. ")")
+    print("[ZM_ZombieHandlerServer] Called addZombiesInOutfitArea for " .. zombieData.outfit .. " zombie at (" .. ix .. ", " .. iy .. ", " .. iz .. ")")
 
-    local zombies = square:getMovingObjects()
+    -- Get the zombie from the returned list or from the square
     local zombie = nil
 
-    for i = zombies:size() - 1, 0, -1 do
-        local obj = zombies:get(i)
-        if instanceof(obj, "IsoZombie") then
-            zombie = obj
-            break
+    if zombieList and zombieList:size() > 0 then
+        zombie = zombieList:get(0)
+        print("[ZM_ZombieHandlerServer] Found zombie from returned list")
+    else
+        -- Fallback: search the square's moving objects
+        local zombies = square:getMovingObjects()
+        for i = zombies:size() - 1, 0, -1 do
+            local obj = zombies:get(i)
+            if instanceof(obj, "IsoZombie") then
+                zombie = obj
+                print("[ZM_ZombieHandlerServer] Found zombie from square search")
+                break
+            end
         end
     end
 
     if not zombie then
-        -- print("Error: Could not find spawned zombie")
+        print("[ZM_ZombieHandlerServer] Error: Could not find spawned zombie")
         return nil
     end
 

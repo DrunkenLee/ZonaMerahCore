@@ -5,27 +5,4 @@ module ZonaMerahCore
         Base
     }
 
-    item BirPletok
-    {
-        Type = Drainable,
-        DisplayName = Bir Pletok,
-        Icon = Beer,
-        Weight = 0.3,
-        UseWhileEquipped = FALSE,
-        UseDelta = 0.25,
-        ReplaceOnUseOn = EmptyBottle,
-        CustomContextMenu = Drink,
-        CustomEatSound = DrinkingFromBottle,
-        Alcoholic = TRUE,
-        AlcoholPower = 8.0,
-        ThirstChange = -30,
-        UnhappyChange = -20,
-        BoredomChange = -10,
-        StressChange = -5,
-        FatigueChange = 5,
-        HungerChange = -5,
-        DaysFresh = 0,
-        DaysTotallyRotten = -1,
-        Tooltip = Tooltip_BirPletok,
-    }
 }

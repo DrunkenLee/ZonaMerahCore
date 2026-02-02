@@ -387,15 +387,17 @@ Events.OnServerCommand.Add(function(module, command, args)
                 local maxPulses = 5  -- 5 pulses over 5 minutes
 
                 -- Make initial sound immediately
-                MakeWorldSound(player, 120, 100)
+                -- addSound(player, player:getX(), player:getY(), player:getZ(), 120, 100)
                 -- player:Say("Zombies are being attracted to this area!")
 
                 -- Create a named function we can reference for removal
-                local soundPulser = nil
+                local soundPulser
                 soundPulser = function()
                     -- Safety check
                     if not player or not player:isAlive() then
-                        Events.EveryOneMinute.Remove(soundPulser)
+                        if soundPulser then
+                            Events.EveryOneMinute.Remove(soundPulser)
+                        end
                         print("Player not valid, stopping sound pulse")
                         return
                     end
@@ -404,7 +406,7 @@ Events.OnServerCommand.Add(function(module, command, args)
                     pulseCount = pulseCount + 1
 
                     -- Make sound
-                    MakeWorldSound(player, 120, 100)
+                    addSound(player, player:getX(), player:getY(), player:getZ(), 120, 100)
 
                     -- Debug info
                     print("Sound pulse #" .. pulseCount .. " of " .. maxPulses)
@@ -416,7 +418,9 @@ Events.OnServerCommand.Add(function(module, command, args)
 
                     -- Check if we've reached the maximum
                     if pulseCount >= maxPulses then
-                        Events.EveryOneMinute.Remove(soundPulser)
+                        if soundPulser then
+                            Events.EveryOneMinute.Remove(soundPulser)
+                        end
                         -- player:Say("The attraction effect has ended")
                         print("Sound pulse sequence complete - reached max pulses")
                     end

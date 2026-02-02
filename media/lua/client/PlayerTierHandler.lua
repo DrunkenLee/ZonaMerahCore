@@ -908,32 +908,7 @@ function PlayerTierHandler.checkActiveBookBonuses()
   end
 end
 
--- Function to spawn Bir Pletok for testing (admin only)
-function PlayerTierHandler.spawnBirPletok(quantity)
-  local player = getPlayer()
-  if not player then
-    print("No player found")
-    return
-  end
 
-  if not player:isAccessLevel("admin") then
-    player:Say("Only admins can spawn items")
-    return
-  end
-
-  local amount = quantity or 1
-  for i = 1, amount do
-    local item = player:getInventory():AddItem("ZonaMerahCore.BirPletok")
-    if item then
-      print("Successfully spawned Bir Pletok: " .. item:getFullType())
-    else
-      print("Failed to spawn Bir Pletok - item may not be defined correctly")
-      player:Say("Failed to spawn Bir Pletok - check console for errors")
-    end
-  end
-
-  player:Say("Attempted to spawn " .. amount .. " Bir Pletok")
-end
 
 
 return PlayerTierHandler
