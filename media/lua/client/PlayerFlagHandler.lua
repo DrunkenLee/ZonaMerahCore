@@ -485,8 +485,7 @@ local function OnRightClickInfo(playerNum, context, worldObjects, test)
     end
 end
 
-Events.OnFillWorldObjectContextMenu.Add(OnRightClickInfo)
-
+-- Events.OnFillWorldObjectContextMenu.Add(OnRightClickInfo)
 
 
 Events.OnServerCommand.Add(function(module, command, args)

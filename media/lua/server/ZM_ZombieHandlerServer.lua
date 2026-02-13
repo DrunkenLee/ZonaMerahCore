@@ -24,7 +24,7 @@ end
 -- Zombie type definitions (same as client)
 ZM_ZombieHandlerServer.ZombieTypes = {
     ["elite"] = {
-        health = 200,
+        health = 400,
         strength = 100,
         fitness = 4,
         walkType = "WTSprint2",
@@ -87,7 +87,7 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         profession = "Unemployed"
     },
     ["monster_bride"] = {
-        health = 100,
+        health = 160,
         strength = 45,
         fitness = 3,
         walkType = "sprint2",
@@ -183,6 +183,15 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         walkType = "sprint1",
         canSprint = true,
         outfit = "Punk",
+        profession = "Unemployed"
+    },
+    ["nightmares"] = {
+        health = 160,
+        strength = 45,
+        fitness = 3,
+        walkType = "sprint2",
+        canSprint = false,
+        outfit = "StripperNaked",
         profession = "Unemployed"
     }
 }
@@ -742,96 +751,6 @@ ZM_ZombieHandlerServer.onZombieDeath = function(zombie)
     end
 end
 
-Events.OnZombieDead.Add(ZM_ZombieHandlerServer.onZombieDeath)
-
--- Send zombie health to the attacker client for immediate sync
-function ZM_ZombieHandlerServer.syncZombieHealthToClient(attacker, zombie)
-    if not attacker or not zombie then return end
-    if attacker.isPlayer and attacker:isPlayer() then
-        sendServerCommand(attacker, "ZM_ZombieHandler", "syncZombieHealth", {
-            zombieID = zombie:getOnlineID(),
-            health = zombie:getHealth()
-        })
-    end
-end
-
--- Server-side hit handler for special zombie abilities
-function ZM_ZombieHandlerServer.onZombieHit(zombie, attacker, bodyPart, weapon)
-    if not zombie or not attacker then return end
-
-    local zombieOutfit = zombie:getOutfitName()
-    if not zombieOutfit then return end
-
-    -- Defer sprint walk types until the zombie is hit for the first time
-    local modData = zombie:getModData()
-    if modData and modData.ZM_DesiredWalkType and not modData.ZM_WalkTypeSet then
-        local desiredWalkType = modData.ZM_DesiredWalkType
-        if desiredWalkType == "sprint1" or desiredWalkType == "sprint2" then
-            zombie:setWalkType(desiredWalkType)
-            modData.ZM_WalkTypeSet = true
-        end
-    end
-
-    -- ArmyCamoGreen zombie: 95% damage resistance (only takes damage 5% of the time)
-        if zombieOutfit == "ArmyCamoGreen" then
-            zombie:setSprinting(true)
-            zombie:setWalkType("WTSprint2")
-
-            local damageChance = 80 -- 10% chance to take damage
-            local damageRoll = ZombRand(100)
-
-            if damageRoll >= damageChance then
-
-        else
-
-            zombie:setAvoidDamage(true)
-
-            if weapon and not weapon:isRanged() then
-                zombie:hitConsequences(weapon, attacker, true, 0.0, false)
-            end
-            zombie:DoZombieSpeeds(0.2)
-            print("[ZM_ZombieHandler] ArmyCamoGreen resisted damage (roll: " .. damageRoll .. " < " .. damageChance .. ")")
-        end
-    end
-
-    -- Screamer1 zombie: 95% damage resistance
-    if zombieOutfit == "Screamer1" then
-        local damageChance = 20  -- 20% chance to take damage
-        local damageRoll = ZombRand(100)
-
-        if damageRoll >= damageChance then
-            -- 95% resistance - heal the zombie back
-            -- local currentHealth = zombie:getHealth()
-            -- zombie:setHealth(currentHealth + 10)  -- Restore health to negate damage
-            -- print("[ZM_ZombieHandler] Screamer1 resisted damage (roll: " .. damageRoll .. " >= " .. damageChance .. ")")
-        else
-            -- print("[ZM_ZombieHandler] Screamer1 took damage (roll: " .. damageRoll .. " < " .. damageChance .. ")")
-        end
-    end
-
-    -- Screamer2 zombie: 20% chance to deflect damage to attacker
-    if zombieOutfit == "Screamer2" and attacker:isPlayer() then
-        local deflectChance = 20
-        local specialStatusChance = 5  -- 5% chance for panic effect
-        local deflectRoll = ZombRand(100)
-
-        if deflectRoll < deflectChance then
-            local damageAmount = 15  -- Fixed damage amount to deflect
-
-            if attacker:getBodyDamage() then
-                attacker:getBodyDamage():AddDamage(BodyPartType.Head, damageAmount)
-                if deflectRoll < specialStatusChance then
-                    attacker:getStats():setPanic(attacker:getStats():getPanic() + 20)
-                end
-                print("[ZM_ZombieHandler] Screamer2 deflected " .. damageAmount .. " damage to attacker (roll: " .. deflectRoll .. ")")
-            end
-        end
-    end
-end
-
-Events.OnHitZombie.Add(ZM_ZombieHandlerServer.onZombieHit)
-
-
 -- Function to create and configure a zombie
 function ZM_ZombieHandlerServer.createZombie(square, zombieType)
     if not square then return nil end
@@ -930,6 +849,13 @@ function ZM_ZombieHandlerServer.createZombie(square, zombieType)
     -- Store the desired walk type and zombie type in mod data
     zombie:getModData().ZM_DesiredWalkType = zombieData.walkType
     zombie:getModData().ZM_ZombieType = zombieType
+
+    if zombieType == "nightmares" then
+        zombie:setCrawler(true)
+        zombie:setBecomeCrawler(true)
+        zombie:setCanWalk(false)
+        zombie:getModData().ZM_NightmareHealth = zombie:getHealth()
+    end
 
     -- Additional configuration for screamers
     if zombieType == "screamer1" or zombieType == "screamer2" then

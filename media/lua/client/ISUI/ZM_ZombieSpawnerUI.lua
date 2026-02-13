@@ -194,7 +194,8 @@ function ZM_ZombieSpawnerUI:populateZombieTypes()
         "screamer1",  -- Screamer type 1
         "screamer2",  -- Screamer type 2
         "psycho1",    -- Psycho type 1
-        "psycho2"     -- Psycho type 2
+        "psycho2",    -- Psycho type 2
+        "nightmares" -- Nightmares zombie (StripperNaked)
     }
 
     -- Clear existing items
@@ -235,7 +236,7 @@ function ZM_ZombieSpawnerUI:onSpawnAtCoords()
     local zombieType = self.coordsTypeCombo:getOptionText(self.coordsTypeCombo.selected) or "elite"
 
     -- Validate zombie type
-    local validTypes = {"elite", "elite2", "screamer1", "screamer2", "psycho1", "psycho2"}
+    local validTypes = {"elite", "elite2", "screamer1", "screamer2", "psycho1", "psycho2", "nightmares"}
     local isValid = false
     for _, validType in ipairs(validTypes) do
         if zombieType == validType then
@@ -245,7 +246,7 @@ function ZM_ZombieSpawnerUI:onSpawnAtCoords()
     end
 
     if not isValid then
-        print("Error: Invalid zombie type '" .. tostring(zombieType) .. "'. Only elite, elite2, screamer1, screamer2, psycho1, psycho2 are supported.")
+        print("Error: Invalid zombie type '" .. tostring(zombieType) .. "'. Only elite, elite2, screamer1, screamer2, psycho1, psycho2, nightmares are supported.")
         return
     end
 
@@ -263,7 +264,7 @@ function ZM_ZombieSpawnerUI:onSpawnAtPlayer()
     local zombieType = self.playerTypeCombo:getOptionText(self.playerTypeCombo.selected) or "elite"
 
     -- Validate zombie type
-    local validTypes = {"elite", "elite2", "screamer1", "screamer2", "psycho1", "psycho2"}
+    local validTypes = {"elite", "elite2", "screamer1", "screamer2", "psycho1", "psycho2", "nightmares"}
     local isValid = false
     for _, validType in ipairs(validTypes) do
         if zombieType == validType then
@@ -273,7 +274,7 @@ function ZM_ZombieSpawnerUI:onSpawnAtPlayer()
     end
 
     if not isValid then
-        print("Error: Invalid zombie type '" .. tostring(zombieType) .. "'. Only elite, elite2, screamer1, screamer2, psycho1, psycho2 are supported.")
+        print("Error: Invalid zombie type '" .. tostring(zombieType) .. "'. Only elite, elite2, screamer1, screamer2, psycho1, psycho2, nightmares are supported.")
         return
     end
 
@@ -294,7 +295,7 @@ function ZM_ZombieSpawnerUI:onSpawnHorde()
     local targetUsername = isTargeted and self.targetEntry:getText() or nil
 
     -- Validate zombie type
-    local validTypes = {"elite", "elite2", "screamer1", "screamer2", "psycho1", "psycho2"}
+    local validTypes = {"elite", "elite2", "screamer1", "screamer2", "psycho1", "psycho2", "nightmares"}
     local isValid = false
     for _, validType in ipairs(validTypes) do
         if zombieType == validType then
@@ -304,7 +305,7 @@ function ZM_ZombieSpawnerUI:onSpawnHorde()
     end
 
     if not isValid then
-        print("Error: Invalid zombie type '" .. tostring(zombieType) .. "'. Only elite, elite2, screamer1, screamer2, psycho1, psycho2 are supported.")
+        print("Error: Invalid zombie type '" .. tostring(zombieType) .. "'. Only elite, elite2, screamer1, screamer2, psycho1, psycho2, nightmares are supported.")
         return
     end
 

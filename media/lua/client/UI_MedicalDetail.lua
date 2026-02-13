@@ -1,6 +1,9 @@
 require "ISUI/ISPanel"
 require "ISUI/ISButton"
 require "ISUI/ISScrollingListBox"
+if not ZM_MedicalCheck then
+    require "ZM_MedicalCheck"
+end
 
 -- Import CharacterStat for accessing stats via documented API
 local CharacterStat = require "zombie/characters/CharacterStat"
@@ -22,6 +25,11 @@ function MedicalDetailUI:createChildren()
     self.titleLabel = ISLabel:new(self.width/2 - 100, 10, 25, "Medical Status Report", 1, 1, 1, 1, UIFont.Medium, true)
     self.titleLabel:initialise()
     self:addChild(self.titleLabel)
+
+    -- Server-side full heal button
+    -- self.fullHealButton = ISButton:new(10, 10, 80, 20, "Full Heal", self, MedicalDetailUI.onClickFullHeal)
+    -- self.fullHealButton:initialise()
+    -- self:addChild(self.fullHealButton)
 
     -- Close button
     self.closeButton = ISButton:new(self.width - 60, 10, 50, 20, "Close", self, MedicalDetailUI.onClickClose)
@@ -46,6 +54,24 @@ function MedicalDetailUI:populateMedicalData()
 
     local bodyDamage = player:getBodyDamage()
     self.infoList:clear()
+
+    local fullHealResponse = ZM_MedicalCheck and ZM_MedicalCheck.getLastFullHealResponse and ZM_MedicalCheck.getLastFullHealResponse() or nil
+    if fullHealResponse then
+        local prefix = fullHealResponse.success and "Last Full Heal: SUCCESS" or "Last Full Heal: FAILED"
+        self.infoList:addItem(prefix, nil)
+        self.infoList:addItem("  " .. tostring(fullHealResponse.message), nil)
+        self.infoList:addItem("  " .. tostring(fullHealResponse.timestamp or ""), nil)
+        self.infoList:addItem(" ", nil)
+    end
+
+    local fullCureResponse = ZM_MedicalCheck and ZM_MedicalCheck.getLastFullCureResponse and ZM_MedicalCheck.getLastFullCureResponse() or nil
+    if fullCureResponse then
+        local prefix = fullCureResponse.success and "Last Full Cure: SUCCESS" or "Last Full Cure: FAILED"
+        self.infoList:addItem(prefix, nil)
+        self.infoList:addItem("  " .. tostring(fullCureResponse.message), nil)
+        self.infoList:addItem("  " .. tostring(fullCureResponse.timestamp or ""), nil)
+        self.infoList:addItem(" ", nil)
+    end
 
     -- Section: Overall Health
     self.infoList:addItem("--- OVERALL HEALTH ---", nil)
@@ -87,7 +113,7 @@ function MedicalDetailUI:populateMedicalData()
             local totalDuration = infectionMortalityDuration
             local hoursLeft = math.max(0, totalDuration - infectedAt)
 
-            self.infoList:addItem("    Infected for: " .. string.format("%.1f hours", infectedAt), nil)
+            self.infoList:addItem("    Infected: " .. string.format("%.1f hours", infectedAt), nil)
             self.infoList:addItem("    Estimated time left: " .. string.format("%.1f hours", hoursLeft), nil)
         end
     end
@@ -364,8 +390,28 @@ function MedicalDetailUI:populateMedicalData()
 end
 
 function MedicalDetailUI:onClickClose()
+    if MedicalDetailUI.instance == self then
+        MedicalDetailUI.instance = nil
+    end
+
     self:setVisible(false)
     self:removeFromUIManager()
+end
+
+function MedicalDetailUI:onClickFullHeal()
+    if ZM_MedicalCheck and ZM_MedicalCheck.requestFullHeal then
+        ZM_MedicalCheck.requestFullHeal()
+    else
+        print("[ZonaMerahCore] Full-heal request function is unavailable on client.")
+    end
+end
+
+function MedicalDetailUI:onClickFullCure()
+    if ZM_MedicalCheck and ZM_MedicalCheck.requestFullCure then
+        ZM_MedicalCheck.requestFullCure()
+    else
+        print("[ZonaMerahCore] Full-cure request function is unavailable on client.")
+    end
 end
 
 function MedicalDetailUI:new(x, y, width, height, player)
@@ -477,6 +523,7 @@ function showMedicalDetailUI(player)
     if not player then return end
 
     local ui = MedicalDetailUI:new(100, 100, 400, 600, player)
+    MedicalDetailUI.instance = ui
     ui:initialise()
     ui:addToUIManager()
     ui:setVisible(true)
@@ -487,5 +534,36 @@ if not _G.checkMedical then
     _G.checkMedical = showMedicalDetailUI
 end
 
+local function onMedicalDetailServerCommand(module, command, args)
+    if module ~= "ZonaMerahCore" then return end
+    args = args or {}
+
+    if command == "FullHealResponse" then
+        -- Keep UI state in sync even if this handler runs before ZM_MedicalCheck's listener.
+        if ZM_MedicalCheck then
+            ZM_MedicalCheck.lastFullHealResponse = {
+                success = args.success == true,
+                message = args.message or "",
+                timestamp = os.date("%Y-%m-%d %H:%M:%S")
+            }
+        end
+    elseif command == "FullCureResponse" then
+        if ZM_MedicalCheck then
+            ZM_MedicalCheck.lastFullCureResponse = {
+                success = args.success == true,
+                message = args.message or "",
+                timestamp = os.date("%Y-%m-%d %H:%M:%S")
+            }
+        end
+    else
+        return
+    end
+
+    if MedicalDetailUI.instance and MedicalDetailUI.instance.populateMedicalData then
+        MedicalDetailUI.instance:populateMedicalData()
+    end
+end
+
+Events.OnServerCommand.Add(onMedicalDetailServerCommand)
 
 -- Events.OnKeyPressed.Add(onCustomUIKeyPressed)
