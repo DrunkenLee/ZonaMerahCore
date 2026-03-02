@@ -45,6 +45,42 @@ Commands.ZMServerCoreLogger = function(player, args)
     print(string.format("%s [ZonaMerahCore][%s] %s", timestamp, logType, message))
 end
 
+Commands.NotifyClaimedVehicleDismantleAttempt = function(player, args)
+    if not player then return end
+
+    args = args or {}
+
+    local username = player:getUsername() or tostring(args.username or "unknown")
+    local owner = tostring(args.owner or "unknown")
+    local vehicleName = tostring(args.vehicleName or args.scriptName or "vehicle")
+    local vehicleId = tostring(args.vehicleId or "unknown")
+    local x = tostring(args.x or "?")
+    local y = tostring(args.y or "?")
+    local z = tostring(args.z or "?")
+
+    local message = string.format(
+        "%s attempted to dismantle claimed AVCS vehicle '%s' (ID: %s, owner: %s) at %s,%s,%s.",
+        username,
+        vehicleName,
+        vehicleId,
+        owner,
+        x, y, z
+    )
+
+    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+    print(string.format("%s [ZonaMerahCore][Security] %s", timestamp, message))
+
+    local onlinePlayers = getOnlinePlayers()
+    if not onlinePlayers then return end
+
+    for i = 0, onlinePlayers:size() - 1 do
+        local targetPlayer = onlinePlayers:get(i)
+        if targetPlayer then
+            sendServerCommand(targetPlayer, "ZonaMerahCore", "Broadcast", { message = message })
+        end
+    end
+end
+
 -- Full-heal request from client. Healing is always executed on the server.
 Commands.RequestFullHeal = function(player, args)
     if not player then return end

@@ -24,7 +24,7 @@ end
 -- Zombie type definitions (same as client)
 ZM_ZombieHandlerServer.ZombieTypes = {
     ["elite"] = {
-        health = 400,
+        health = 1000,
         strength = 100,
         fitness = 4,
         walkType = "WTSprint2",
@@ -195,6 +195,57 @@ ZM_ZombieHandlerServer.ZombieTypes = {
         profession = "Unemployed"
     }
 }
+
+-- Weighted spawn pool that includes every zombie type in ZombieTypes.
+-- Higher weight = higher spawn chance.
+ZM_ZombieHandlerServer.ZoneSpawnWeights = ZM_ZombieHandlerServer.ZoneSpawnWeights or {
+    elite = 8,
+    elite2 = 7,
+    screamer1 = 11,
+    screamer2 = 11,
+    bandit_late = 9,
+    bandit_mid = 9,
+    biker = 8,
+    monster_bride = 6,
+    bank_robber = 8,
+    bounty_hunter = 8,
+    beast_mom = 6,
+    chunk = 6,
+    commando_john = 7,
+    ghillie = 8,
+    hunter = 8,
+    ice_hockey_white = 6,
+    ice_hockey_goalie = 5,
+    punk = 7,
+    nightmares = 4
+}
+
+local function pickWeightedZombieType(weightTable)
+    local totalWeight = 0
+    for zombieType, weight in pairs(weightTable) do
+        if ZM_ZombieHandlerServer.ZombieTypes[zombieType] and type(weight) == "number" and weight > 0 then
+            totalWeight = totalWeight + weight
+        end
+    end
+
+    if totalWeight <= 0 then
+        return "elite"
+    end
+
+    local roll = ZombRand(totalWeight) + 1
+    local runningWeight = 0
+
+    for zombieType, weight in pairs(weightTable) do
+        if ZM_ZombieHandlerServer.ZombieTypes[zombieType] and type(weight) == "number" and weight > 0 then
+            runningWeight = runningWeight + weight
+            if roll <= runningWeight then
+                return zombieType
+            end
+        end
+    end
+
+    return "elite"
+end
 
 -- Debug flag for sprint enforcement logging
 ZM_ZombieHandlerServer.SprintDebug = (ZM_ZombieHandlerServer.SprintDebug ~= false)
@@ -1287,15 +1338,6 @@ function ZM_ZombieHandlerServer.spawnHordeForAllPlayers(player, args)
     local radius = args.radius or 5
     local safeRadius = args.safeRadius or 0
 
-    -- List of random zombie types to spawn
-    local randomOutfits = {
-        "bandit_late", "bandit_mid", "biker",
-        "bank_robber", "bounty_hunter", "beast_mom",
-        "chunk", "commando_john", "ghillie",
-        "hunter", "ice_hockey_white", "ice_hockey_goalie",
-        "punk"
-    }
-
     local onlinePlayers = getOnlinePlayers()
     if not onlinePlayers or onlinePlayers:size() == 0 then
         sendServerCommand(player, "ZM_ZombieHandler", "spawnError", {
@@ -1338,32 +1380,31 @@ function ZM_ZombieHandlerServer.spawnHordeForAllPlayers(player, args)
 
                     -- Spawn zombies around this player
                     for j = 1, count do
-                    -- Select random zombie type from the list
-                    local randomIndex = ZombRand(#randomOutfits) + 1
-                    local zombieType = randomOutfits[randomIndex]
+                        -- Select random zombie type from weighted pool (all defined types).
+                        local zombieType = pickWeightedZombieType(ZM_ZombieHandlerServer.ZoneSpawnWeights)
 
-                    -- Calculate spawn position in a circle around player
-                    local angle = (j / count) * math.pi * 2
-                    local spawnX = targetPlayer:getX() + 40 + (math.cos(angle) * radius)
-                    local spawnY = targetPlayer:getY() + 40 + (math.sin(angle) * radius)
-                    local spawnZ = targetPlayer:getZ()
+                        -- Calculate spawn position in a circle around player
+                        local angle = (j / count) * math.pi * 2
+                        local spawnX = targetPlayer:getX() + 40 + (math.cos(angle) * radius)
+                        local spawnY = targetPlayer:getY() + 40 + (math.sin(angle) * radius)
+                        local spawnZ = targetPlayer:getZ()
 
-                    -- Check safe radius if specified
-                    if safeRadius > 0 and ZM_ZombieHandlerServer.isPlayerNearby(spawnX, spawnY, spawnZ, safeRadius) then
-                        -- Skip this spawn location
-                    else
-                        local square = getCell():getGridSquare(spawnX, spawnY, spawnZ)
-                        if square then
-                            local zombie = ZM_ZombieHandlerServer.createZombie(square, zombieType)
-                            if zombie then
-                                -- Make zombie target the player
-                                zombie:setTarget(targetPlayer)
-                                playerSpawned = playerSpawned + 1
-                                totalSpawned = totalSpawned + 1
+                        -- Check safe radius if specified
+                        if safeRadius > 0 and ZM_ZombieHandlerServer.isPlayerNearby(spawnX, spawnY, spawnZ, safeRadius) then
+                            -- Skip this spawn location
+                        else
+                            local square = getCell():getGridSquare(spawnX, spawnY, spawnZ)
+                            if square then
+                                local zombie = ZM_ZombieHandlerServer.createZombie(square, zombieType)
+                                if zombie then
+                                    -- Make zombie target the player
+                                    zombie:setTarget(targetPlayer)
+                                    playerSpawned = playerSpawned + 1
+                                    totalSpawned = totalSpawned + 1
+                                end
                             end
                         end
                     end
-                end
 
                     -- Notify the target player
                     sendServerCommand(targetPlayer, "ZM_ZombieHandler", "zombieSpawned", {

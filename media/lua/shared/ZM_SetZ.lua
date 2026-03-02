@@ -18,4 +18,4 @@ local function forceSprint(zombie)
 
 end
 
-Events.OnZombieUpdate.Add(forceSprint)
+-- Events.OnZombieUpdate.Add(forceSprint)

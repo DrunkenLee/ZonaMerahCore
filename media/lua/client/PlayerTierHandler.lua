@@ -3,25 +3,381 @@ require "ISContextMenu"
 require "Translate/EN/Sandbox_EN"
 require "SpeedFramework"
 require "PlayerTitleHandler"
+require "PlayerTierPersistence"
+require "ISUI/PlayerTierInfoUI"
 
 PlayerTierHandler = {
   historyData = {}
 }
 
-local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend", "Immortal", "Mythic", "Godlike" }
+local availableTiers = { "Newbies", "Adventurer", "Veteran", "Champion", "Legend", "Immortal", "Mythic", "Godlike", "Beyond Godlike" }
 local availableExoOperatorLevel = {1 , 2 , 3 , 4 }
+local TIER_SYNC_COOLDOWN_MS = 10000
+local tierCatalog = {
+  { name = "Newbies", minDays = 0, dayTarget = 0, minKills = 0, extra = "Starter tier" },
+  { name = "Adventurer", minDays = 3, dayTarget = 4, minKills = 300, extra = "You getting used to Zona Merah" },
+  { name = "Veteran", minDays = 5, dayTarget = 6, minKills = 1000, extra = "Auto Repair Shop Permit, ZM Virtual Garage Permit" },
+  { name = "Champion", minDays = 10, dayTarget = 11, minKills = 4000, extra = "Almost There Survivor!" },
+  { name = "Legend", minDays = 15, dayTarget = 16, minKills = 8000, extra = "Checkpoint Tier, Equip Legend Weapon" },
+  { name = "Immortal", minDays = 15, dayTarget = 16, minKills = 30000, extra = "Add inventory capacity" },
+  { name = "Mythic", minDays = 15, dayTarget = 16, minKills = 50000, extra = "Add inventory capacity" },
+  { name = "Godlike", minDays = 15, dayTarget = 16, minKills = 75000, extra = "Unlimited endurance, Add inventory capacity" },
+  { name = "Beyond Godlike", minDays = 15, dayTarget = 16, minKills = 200000, extra = "Top progression tier, Add inventory capacity" }
+}
+
+local function formatNumber(value)
+  local numberValue = math.floor(tonumber(value) or 0)
+  local sign = ""
+  if numberValue < 0 then
+    sign = "-"
+    numberValue = math.abs(numberValue)
+  end
+
+  local result = tostring(numberValue)
+  while true do
+    local replaced, count = result:gsub("^(%d+)(%d%d%d)", "%1,%2")
+    result = replaced
+    if count == 0 then
+      break
+    end
+  end
+  return sign .. result
+end
+
+local function getTierDefinitionByName(tierName)
+  for i, def in ipairs(tierCatalog) do
+    if def.name == tierName then
+      return def, i
+    end
+  end
+  return tierCatalog[1], 1
+end
+
+local function getTierBenefitsText(definition)
+  if not definition then
+    return "No special benefit configured"
+  end
+
+  if definition.extra and definition.extra ~= "" then
+    return definition.extra
+  end
+
+  return "No special benefit configured"
+end
+
+local function safeNumber(value, fallback)
+  local numberValue = tonumber(value)
+  if numberValue == nil then
+    return fallback or 0
+  end
+  return numberValue
+end
+
+local function nowMs()
+  if getTimestampMs then
+    return safeNumber(getTimestampMs(), 0)
+  end
+  return 0
+end
+
+local function getHighestTierFlagValue(modData)
+  if not modData then
+    return 0
+  end
+
+  return math.max(
+    safeNumber(modData.PlayerTierHighestFlagValue, 0),
+    PlayerTierPersistence.getTierValue(modData.PlayerTierHighestFlagName)
+  )
+end
+
+local function setHighestTierFlagValue(modData, tierName, tierValue)
+  if not modData then
+    return
+  end
+
+  local resolvedTierValue = math.max(
+    safeNumber(tierValue, 0),
+    PlayerTierPersistence.getTierValue(tierName)
+  )
+  if resolvedTierValue < 1 then
+    return
+  end
+
+  local resolvedTierName = PlayerTierPersistence.getTierName(resolvedTierValue)
+  modData.PlayerTierHighestFlagValue = resolvedTierValue
+  modData.PlayerTierHighestFlagName = resolvedTierName
+end
+
+local function mergeHighestTierFlagValue(modData, tierName, tierValue)
+  if not modData then
+    return
+  end
+
+  local incomingTierValue = math.max(
+    safeNumber(tierValue, 0),
+    PlayerTierPersistence.getTierValue(tierName)
+  )
+  if incomingTierValue < 1 then
+    return
+  end
+
+  if incomingTierValue > getHighestTierFlagValue(modData) then
+    setHighestTierFlagValue(modData, tierName, incomingTierValue)
+  end
+end
+
+local function addTierFlagOnUpgrade(player, previousTierValue, tierName, tierValue)
+  if not player then
+    return false
+  end
+
+  local modData = player:getModData()
+  local resolvedTierValue = math.max(
+    safeNumber(tierValue, 0),
+    PlayerTierPersistence.getTierValue(tierName)
+  )
+  if resolvedTierValue < 1 then
+    return false
+  end
+
+  local resolvedTierName = PlayerTierPersistence.getTierName(resolvedTierValue)
+  local oldTierValue = safeNumber(previousTierValue, 0)
+  local highestFlaggedTierValue = getHighestTierFlagValue(modData)
+
+  if resolvedTierValue <= oldTierValue then
+    return false
+  end
+
+  if resolvedTierValue <= highestFlaggedTierValue then
+    return false
+  end
+
+  if not CharacterManager or not CharacterManager.instance or not CharacterManager.instance.addFlag then
+    return false
+  end
+
+  CharacterManager.instance:addFlag(resolvedTierName)
+  setHighestTierFlagValue(modData, resolvedTierName, resolvedTierValue)
+  return true
+end
+
+local function getReliableTierSnapshot(player)
+  local modData = player:getModData()
+  local liveHours = safeNumber(player:getHoursSurvived(), 0)
+  local liveKills = safeNumber(player:getZombieKills(), 0)
+  local storedHours = math.max(
+    safeNumber(modData.PersistentHours, 0),
+    safeNumber(modData.HoursSurvived, 0)
+  )
+  local storedKills = math.max(
+    safeNumber(modData.PersistentZombieKills, 0),
+    safeNumber(modData.ZombieKills, 0)
+  )
+
+  local tierValue = math.max(
+    safeNumber(modData.PlayerTierValue, 0),
+    PlayerTierPersistence.getTierValue(modData.PlayerTier)
+  )
+
+  if tierValue < 1 then
+    tierValue = 1
+  end
+
+  local snapshot = {
+    hours = math.max(liveHours, storedHours),
+    zombieKills = math.max(liveKills, storedKills),
+    tierValue = tierValue,
+    tier = modData.PlayerTier,
+    updatedAt = nowMs()
+  }
+
+  return PlayerTierPersistence.sanitizeSnapshot(snapshot)
+end
+
+function PlayerTierHandler.getTierCatalog()
+  return tierCatalog
+end
+
+function PlayerTierHandler.getTierProgressData(player)
+  if not player then
+    return nil
+  end
+
+  local snapshot = getReliableTierSnapshot(player)
+  local currentTier = PlayerTierHandler.getPlayerTier(player)
+  local currentTierValue = PlayerTierHandler.getPlayerTierValue(player)
+  local currentDef, currentIndex = getTierDefinitionByName(currentTier)
+  local nextDef = tierCatalog[currentIndex + 1]
+  local daysSurvived = snapshot.hours / 24
+  local titleValue = 0
+
+  if PlayerTitleHandler and PlayerTitleHandler.getPlayerTitle then
+    titleValue = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
+  end
+
+  local data = {
+    username = player:getUsername(),
+    currentTier = currentTier,
+    currentTierValue = currentTierValue,
+    currentBenefits = getTierBenefitsText(currentDef),
+    hoursSurvived = math.floor(snapshot.hours),
+    daysSurvived = daysSurvived,
+    zombieKills = math.floor(snapshot.zombieKills),
+    titleValue = titleValue,
+    nextTier = nil,
+    nextTierRequirement = "Max tier reached",
+    nextTierBenefits = "No further tier progression",
+    daysProgress = 1,
+    killsProgress = 1,
+    overallProgress = 1,
+    daysMissing = 0,
+    killsMissing = 0,
+    tierRows = {}
+  }
+
+  for index, definition in ipairs(tierCatalog) do
+    local requirementText
+    if definition.dayTarget <= 0 and definition.minKills <= 0 then
+      requirementText = "No requirement"
+    else
+      requirementText = ">" .. tostring(definition.minDays) .. " days and " .. formatNumber(definition.minKills) .. " kills"
+    end
+
+    data.tierRows[index] = {
+      name = definition.name,
+      requirement = requirementText,
+      benefits = getTierBenefitsText(definition),
+      isCurrent = (index == currentIndex)
+    }
+  end
+
+  if nextDef then
+    local dayTarget = nextDef.dayTarget
+    local killTarget = nextDef.minKills
+    local dayProgress = 1
+    local killsProgress = 1
+
+    if dayTarget > 0 then
+      dayProgress = math.min(daysSurvived / dayTarget, 1)
+    end
+    if killTarget > 0 then
+      killsProgress = math.min(snapshot.zombieKills / killTarget, 1)
+    end
+
+    data.nextTier = nextDef.name
+    data.nextTierRequirement = "Need >" .. tostring(nextDef.minDays) .. " days and " .. formatNumber(nextDef.minKills) .. " kills"
+    data.nextTierBenefits = getTierBenefitsText(nextDef)
+    data.daysProgress = dayProgress
+    data.killsProgress = killsProgress
+    data.overallProgress = math.min(dayProgress, killsProgress)
+    data.daysMissing = math.max(0, dayTarget - daysSurvived)
+    data.killsMissing = math.max(0, killTarget - snapshot.zombieKills)
+  end
+
+  return data
+end
+
+function PlayerTierHandler.openTierInfoUI(player)
+  if not player then
+    return
+  end
+
+  PlayerTierHandler.requestTierSnapshot(player, false)
+  PlayerTierHandler.requestTierInventoryBonusReapply(player)
+  local progressData = PlayerTierHandler.getTierProgressData(player)
+
+  if PlayerTierInfoUI and PlayerTierInfoUI.show then
+    PlayerTierInfoUI.show(player, progressData)
+  else
+    player:Say("Tier UI is not available.")
+  end
+end
 
 -- Utility function to update player stats and store in mod data
 function PlayerTierHandler.updatePlayerStats(player, hours, kills)
-  if hours then
-    player:setHoursSurvived(hours)
-    player:getModData().HoursSurvived = hours
+  if not player then
+    return
   end
 
-  if kills then
-    player:setZombieKills(kills)
-    player:getModData().ZombieKills = kills
+  local modData = player:getModData()
+
+  if hours ~= nil then
+    local safeHours = math.max(0, math.floor(safeNumber(hours, 0)))
+    player:setHoursSurvived(safeHours)
+    modData.HoursSurvived = safeHours
+    modData.PersistentHours = math.max(
+      safeNumber(modData.PersistentHours, 0),
+      safeHours
+    )
   end
+
+  if kills ~= nil then
+    local safeKills = math.max(0, math.floor(safeNumber(kills, 0)))
+    player:setZombieKills(safeKills)
+    modData.ZombieKills = safeKills
+    modData.PersistentZombieKills = math.max(
+      safeNumber(modData.PersistentZombieKills, 0),
+      safeKills
+    )
+  end
+end
+
+function PlayerTierHandler.syncTierSnapshot(player, forceSync)
+  if not player or not isClient or not isClient() then
+    return
+  end
+
+  local modData = player:getModData()
+  local currentTime = nowMs()
+  local lastSync = safeNumber(modData._lastTierSyncAt, 0)
+
+  if not forceSync and lastSync > 0 and currentTime - lastSync < TIER_SYNC_COOLDOWN_MS then
+    return
+  end
+
+  local snapshot = getReliableTierSnapshot(player)
+  modData.PersistentHours = snapshot.hours
+  modData.PersistentZombieKills = snapshot.zombieKills
+  modData._lastTierSyncAt = currentTime
+
+  sendClientCommand("PlayerTierHandler", "syncTierSnapshot", {
+    username = player:getUsername(),
+    hours = snapshot.hours,
+    zombieKills = snapshot.zombieKills,
+    tier = snapshot.tier,
+    tierValue = snapshot.tierValue,
+    updatedAt = snapshot.updatedAt
+  })
+end
+
+function PlayerTierHandler.requestTierSnapshot(player, forceRequest)
+  if not player or not isClient or not isClient() then
+    return
+  end
+
+  local modData = player:getModData()
+  local currentTime = nowMs()
+  local lastRequest = safeNumber(modData._lastTierRequestAt, 0)
+
+  if not forceRequest and lastRequest > 0 and currentTime - lastRequest < TIER_SYNC_COOLDOWN_MS then
+    return
+  end
+
+  modData._lastTierRequestAt = currentTime
+  sendClientCommand("PlayerTierHandler", "requestTierSnapshot", {
+    username = player:getUsername()
+  })
+end
+
+function PlayerTierHandler.requestTierInventoryBonusReapply(player)
+  if not player or not isClient or not isClient() then
+    return
+  end
+
+  sendClientCommand("PlayerTierHandler", "reapplyTierInventoryBonus", {
+    username = player:getUsername()
+  })
 end
 
 function PlayerTierHandler.getPlayerEquippedGloves(player)
@@ -89,8 +445,7 @@ end
 function PlayerTierHandler.recordPlayerTier(player)
   if not player then return nil end
 
-  -- Trigger server-side save
-  sendClientCommand("PlayerTierHandler", "saveSurvivedHours", {})
+  PlayerTierHandler.syncTierSnapshot(player, true)
 
   player:Say("Your tier data has been recorded on the server.")
 end
@@ -98,8 +453,7 @@ end
 function PlayerTierHandler.loadPlayerTierFromFile(player)
   if not player then return nil end
 
-  -- Trigger server-side load
-  sendClientCommand("PlayerTierHandler", "loadSurvivedHours", {})
+  PlayerTierHandler.requestTierSnapshot(player, true)
 
   player:Say("Requesting your tier data from the server...")
 end
@@ -107,23 +461,14 @@ end
 -- New function to explicitly request tier data from server
 function PlayerTierHandler.loadTierFromServer(player)
   if not player then return end
-  local username = player:getUsername()
-
-  sendClientCommand("PlayerTierHandler", "loadPlayerTier", {
-      username = username
-  })
+  PlayerTierHandler.requestTierSnapshot(player, true)
 
   player:Say("Requesting your tier data from the server...")
 end
 
 function PlayerTierHandler.reassignRecordedTier(player)
   if not player then return nil end
-  local username = player:getUsername()
-
-  -- Trigger server-side load (includes zombie kills now)
-  sendClientCommand("PlayerTierHandler", "loadSurvivedHours", {
-    username = username
-  })
+  PlayerTierHandler.requestTierSnapshot(player, true)
 
   player:Say("Requesting your tier data from the server...")
 end
@@ -165,21 +510,31 @@ end
 function PlayerTierHandler.getPlayerTierValue(player)
   if not player then return nil end
   local modData = player:getModData()
-  return modData.PlayerTierValue or 1 -- Default to Tier Value 1 if not set
+  return math.max(
+    safeNumber(modData.PlayerTierValue, 0),
+    PlayerTierPersistence.getTierValue(modData.PlayerTier)
+  )
 end
 
 function PlayerTierHandler.getPlayerTier(player)
     if not player then return nil end
     local modData = player:getModData()
-    return modData.PlayerTier or "Newbies" -- Default to Tier 1 if not set
+    local tierValue = PlayerTierHandler.getPlayerTierValue(player)
+    local tierName = modData.PlayerTier
+    if not tierName or tierName == "" then
+      tierName = PlayerTierPersistence.getTierName(tierValue)
+      modData.PlayerTier = tierName
+      modData.PlayerTierValue = tierValue
+    end
+    return tierName
 end
 
 -- Function to display the player's tier
 function PlayerTierHandler.checkPlayerTier(player)
-    local tier = PlayerTierHandler.getPlayerTier(player)
-    local survivalDays = player:getHoursSurvived() / 24
-    local intSurvivalDays = math.floor(survivalDays)
-    player:Say("Your current tier is: " .. tier .. " and you have survived for " .. intSurvivalDays .. " days.")
+    if not player then
+      return
+    end
+    PlayerTierHandler.openTierInfoUI(player)
 end
 
 -- Function to add tier options for a specific player
@@ -246,9 +601,13 @@ end
 
 function PlayerTierHandler.updateTierAndGiveXPBoost(player)
   if not player then return end
-
-  PlayerTierHandler.updatePlayerTier(player)
+  -- player:Say("Updating your tier and applying XP boost if eligible...")
+  local tierUpdated = PlayerTierHandler.updatePlayerTier(player)
   PlayerTierHandler.giveXPBoost(player)
+  PlayerTierHandler.requestTierInventoryBonusReapply(player)
+  if tierUpdated then
+    PlayerTierHandler.syncTierSnapshot(player, true)
+  end
 
   local tier = PlayerTierHandler.getPlayerTier(player)
 
@@ -258,7 +617,6 @@ function PlayerTierHandler.updateTierAndGiveXPBoost(player)
   end
 
   sendClientCommand("PlayerTierHandler", "setUnlimitedEnduranceAndTrait", { username = player:getUsername() })
-  player:Say("DEBUG: FORCE UPDATE TIER!")
 end
 
 -- Function to add "Check My Tier" option to the player's context menu
@@ -269,10 +627,10 @@ function PlayerTierHandler.addPlayerTierMenu(playerIndex, context)
     -- Check if player has title level >= 1
   local playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
   if not playerTitle or playerTitle < 1 then
-    context:addOption("Check My Tier", player, PlayerTierHandler.checkPlayerTier, player)
+    context:addOption("Check My Tier", player, PlayerTierHandler.openTierInfoUI, player)
     context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
   else
-    context:addOption("Check My Tier", player, PlayerTierHandler.checkPlayerTier, player)
+    context:addOption("Check My Tier", player, PlayerTierHandler.openTierInfoUI, player)
     context:addOption("Update My Tier and Get Boost", player, PlayerTierHandler.updateTierAndGiveXPBoost, player)
     -- context:addOption("VIP: (DANGER!) Update My Tier To Minimum VIP Min Tier", player, PlayerTierHandler.loadTierFromServer, player)
   end
@@ -334,37 +692,40 @@ function PlayerTierHandler.giveXPBoost(player)
 end
 
 function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
-  if not player then return false end
-  local modData = player:getModData()
-
-  local survivalDays = player:getHoursSurvived() / 24
-  local zombieKills = player:getZombieKills()
-
-  -- Check player title and apply minimum stats for VIPs
-  local playerTitle = 0
-  if isClient and PlayerTitleHandler and PlayerTitleHandler.getPlayerTitle then
-    playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
-    playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player))
+  if not player then
+    return false
   end
+
+  local modData = player:getModData()
+  local snapshot = getReliableTierSnapshot(player)
+  local survivalDays = snapshot.hours / 24
+  local zombieKills = snapshot.zombieKills
+
+  if snapshot.hours > safeNumber(player:getHoursSurvived(), 0) or
+     snapshot.zombieKills > safeNumber(player:getZombieKills(), 0) then
+    PlayerTierHandler.updatePlayerStats(player, snapshot.hours, snapshot.zombieKills)
+  end
+
+  local playerTitle = 0
+  if isClient and isClient() and PlayerTitleHandler and PlayerTitleHandler.getPlayerTitle then
+    playerTitle = tonumber(PlayerTitleHandler.getPlayerTitle(player)) or 0
+  end
+
   local statsChanged = false
 
-  -- Title = 1 (VVIP) must have at least Champion stats
-  -- player:Say("DEBUG: Player Title Level: " .. tostring(playerTitle))
   if playerTitle == 1 then
-    local minDays = 15  -- > 20 days needed for Champion
+    local minDays = 15
     local minKills = 4001
 
     if survivalDays < minDays then
       local minHours = minDays * 24
-      player:setHoursSurvived(minHours)
-      modData.HoursSurvived = minHours
+      PlayerTierHandler.updatePlayerStats(player, minHours, nil)
       survivalDays = minDays
       statsChanged = true
     end
 
     if zombieKills < minKills then
-      player:setZombieKills(minKills)
-      modData.ZombieKills = minKills
+      PlayerTierHandler.updatePlayerStats(player, nil, minKills)
       zombieKills = minKills
       statsChanged = true
     end
@@ -374,22 +735,19 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
     end
   end
 
-  -- Title >= 2 (VVIP or MVP) must have at least Legend stats
   if playerTitle >= 2 then
-    local minDays = 16  -- > 30 days needed for Legend
+    local minDays = 16
     local minKills = 8001
 
     if survivalDays < minDays then
       local minHours = minDays * 24
-      player:setHoursSurvived(minHours)
-      modData.HoursSurvived = minHours
+      PlayerTierHandler.updatePlayerStats(player, minHours, nil)
       survivalDays = minDays
       statsChanged = true
     end
 
     if zombieKills < minKills then
-      player:setZombieKills(minKills)
-      modData.ZombieKills = minKills
+      PlayerTierHandler.updatePlayerStats(player, nil, minKills)
       zombieKills = minKills
       statsChanged = true
     end
@@ -402,82 +760,89 @@ function PlayerTierHandler.updatePlayerTier(player, forceUpdate)
   local newTier = "Newbies"
   local newTierValue = 1
 
-  -- Both survival days AND zombie kills must be met to advance tiers
-  if (survivalDays > 3 and zombieKills >= 300) then
-      newTier = "Adventurer"
-      newTierValue = 2
+  if survivalDays > 3 and zombieKills >= 300 then
+    newTier = "Adventurer"
+    newTierValue = 2
   end
-  if (survivalDays > 5 and zombieKills >= 1000) then
-      newTier = "Veteran"
-      newTierValue = 3
-      -- CharacterManager.instance:addFlag("veteranTier")
+  if survivalDays > 5 and zombieKills >= 1000 then
+    newTier = "Veteran"
+    newTierValue = 3
   end
-  if (survivalDays > 10 and zombieKills >= 4000) then
-      newTier = "Champion"
-      newTierValue = 4
-      -- CharacterManager.instance:addFlag("championTier")
+  if survivalDays > 10 and zombieKills >= 4000 then
+    newTier = "Champion"
+    newTierValue = 4
   end
-  if (survivalDays > 15 and zombieKills >= 8000) then
-      newTier = "Legend"
-      newTierValue = 5
-      -- CharacterManager.instance:addFlag("legendTier")
+  if survivalDays > 15 and zombieKills >= 8000 then
+    newTier = "Legend"
+    newTierValue = 5
   end
-  if (survivalDays > 15 and zombieKills >= 30000) then
-      newTier = "Immortal"
-      newTierValue = 6
-      -- CharacterManager.instance:addFlag("immortalTier")
+  if survivalDays > 15 and zombieKills >= 30000 then
+    newTier = "Immortal"
+    newTierValue = 6
   end
-  if (survivalDays > 15 and zombieKills >= 50000) then
-      newTier = "Mythic"
-      newTierValue = 7
-      -- CharacterManager.instance:addFlag("mythicTier")
+  if survivalDays > 15 and zombieKills >= 50000 then
+    newTier = "Mythic"
+    newTierValue = 7
   end
-  if (survivalDays > 15 and zombieKills >= 75000) then
-      newTier = "Godlike"
-      newTierValue = 8
-      -- CharacterManager.instance:addFlag("godlikeTier")
+  if survivalDays > 15 and zombieKills >= 75000 then
+    newTier = "Godlike"
+    newTierValue = 8
   end
+  if survivalDays > 15 and zombieKills >= 200000 then
+    newTier = "Beyond Godlike"
+    newTierValue = 9
 
-  if (survivalDays > 15 and zombieKills >= 200000) then
-      newTier = "Beyond Godlike"
-      newTierValue = 9
+    if ZMEquipmentHandler and ZMEquipmentHandler.setRestrictedGearAllow and getPlayer() then
       ZMEquipmentHandler.setRestrictedGearAllow(getPlayer():getUsername(), "Base.BF2042Antivirus", true)
-      -- CharacterManager.instance:addFlag("beyondGodlikeTier")
+    end
   end
 
-  -- We still check minimum tier requirements as a safety measure
-  -- Title = 1 (VIP) must be at least Champion
   if playerTitle == 1 and newTierValue < 4 then
-      newTier = "Champion"
-      newTierValue = 4
+    newTier = "Champion"
+    newTierValue = 4
   end
 
-  -- Title >= 2 (VVIP or MVP) must be at least Legend
   if playerTitle >= 2 and newTierValue < 5 then
-      newTier = "Legend"
-      newTierValue = 5
+    newTier = "Legend"
+    newTierValue = 5
   end
 
-  local currentTier = modData.PlayerTier
-  local currentTierValue = modData.PlayerTierValue
-
-  -- Update if tier changed OR stats changed OR forceUpdate is true
-  if currentTier ~= newTier or statsChanged or forceUpdate == true then
-      modData.PlayerTier = newTier
-      modData.PlayerTierValue = newTierValue
-      local intSurvivalDays = math.floor(survivalDays)
-      -- player:Say("You have survived for " .. intSurvivalDays .. " days with " .. zombieKills .. " zombie kills and have been promoted to " .. newTier)
-
-      -- Add message if tier was upgraded due to title status
-      if (playerTitle == 1 and newTierValue == 4 and survivalDays <= 20) or
-         (playerTitle >= 2 and newTierValue == 5 and survivalDays <= 30) then
-          player:Say("Your tier was boosted due to your Supporter status!")
-      end
-
-      return true -- Return true if tier was updated
+  local currentTierValue = PlayerTierHandler.getPlayerTierValue(player)
+  if not forceUpdate and newTierValue < currentTierValue then
+    newTierValue = currentTierValue
+    newTier = PlayerTierPersistence.getTierName(newTierValue)
   end
 
-  return false -- Return false if no update occurred
+  local currentTier = modData.PlayerTier or PlayerTierPersistence.getTierName(currentTierValue)
+
+  local mergedHours = math.max(
+    safeNumber(modData.PersistentHours, 0),
+    safeNumber(modData.HoursSurvived, 0),
+    math.floor(survivalDays * 24)
+  )
+  local mergedKills = math.max(
+    safeNumber(modData.PersistentZombieKills, 0),
+    safeNumber(modData.ZombieKills, 0),
+    math.floor(zombieKills)
+  )
+
+  modData.PersistentHours = mergedHours
+  modData.PersistentZombieKills = mergedKills
+
+  if currentTier ~= newTier or currentTierValue ~= newTierValue or statsChanged or forceUpdate == true then
+    modData.PlayerTier = newTier
+    modData.PlayerTierValue = newTierValue
+    addTierFlagOnUpgrade(player, currentTierValue, newTier, newTierValue)
+
+    if (playerTitle == 1 and newTierValue == 4 and survivalDays <= 20) or
+       (playerTitle >= 2 and newTierValue == 5 and survivalDays <= 30) then
+      player:Say("Your tier was boosted due to your Supporter status!")
+    end
+
+    return true
+  end
+
+  return false
 end
 
 function PlayerTierHandler.giveBookXPBoost(player, skillName)
@@ -801,72 +1166,137 @@ function PlayerTierHandler.checkExoPermissions(player)
 end
 
 -- Enhanced server command handler to properly process all responses
+local function applyServerTierSnapshot(player, args, showMessage)
+  if not player or not args then
+    return
+  end
+
+  if args.username and player:getUsername() ~= args.username then
+    return
+  end
+
+  local modData = player:getModData()
+  local serverSnapshot = PlayerTierPersistence.sanitizeSnapshot({
+    hours = args.hours,
+    zombieKills = args.zombieKills,
+    tier = args.tier,
+    tierValue = args.tierValue,
+    updatedAt = args.updatedAt
+  })
+  local mergedSnapshot = PlayerTierPersistence.mergeSnapshots(
+    getReliableTierSnapshot(player),
+    serverSnapshot
+  )
+
+  PlayerTierHandler.updatePlayerStats(player, mergedSnapshot.hours, mergedSnapshot.zombieKills)
+  modData.PersistentHours = mergedSnapshot.hours
+  modData.PersistentZombieKills = mergedSnapshot.zombieKills
+
+  local currentTierValue = PlayerTierHandler.getPlayerTierValue(player)
+  if mergedSnapshot.tierValue > currentTierValue then
+    modData.PlayerTier = mergedSnapshot.tier
+    modData.PlayerTierValue = mergedSnapshot.tierValue
+    addTierFlagOnUpgrade(player, currentTierValue, mergedSnapshot.tier, mergedSnapshot.tierValue)
+  end
+
+  mergeHighestTierFlagValue(modData, args.highestTierFlagName, args.highestTierFlagValue)
+
+  local tierWasUpdated = PlayerTierHandler.updatePlayerTier(player, false)
+  PlayerTierHandler.giveXPBoost(player)
+  if tierWasUpdated then
+    PlayerTierHandler.syncTierSnapshot(player, true)
+  end
+
+  if showMessage then
+    local survivalDays = math.floor(mergedSnapshot.hours / 24)
+    player:Say(
+      "Tier data synced: " .. survivalDays .. " days survived and " ..
+      mergedSnapshot.zombieKills .. " zombie kills."
+    )
+  end
+
+  if PlayerTierInfoUI and PlayerTierInfoUI.instance and PlayerTierInfoUI.instance.refreshData then
+    PlayerTierInfoUI.instance:refreshData()
+  end
+end
+
 Events.OnServerCommand.Add(function(module, command, args)
-  if module == "PlayerTierHandler" then
-      if command == "tierSetResponse" then
-          -- Display response to admin
-          local player = getPlayer()
-          if player then
-              player:Say(args.message)
-          end
-      elseif command == "tierUpdated" then
-          -- Update local player data
-          local player = getPlayer()
-          if player then
-              local modData = player:getModData()
-              modData.PlayerTier = args.tier
-              modData.PlayerTierValue = args.tierValue or 1
-              modData.TierSetManually = true
-              player:Say(args.message)
-          end
-      elseif command == "loadPlayerTierResponse" then
-          -- Handle loaded tier data
-          local player = getPlayer()
-          if player and player:getUsername() == args.username and args.tier then
-              local modData = player:getModData()
-              modData.PlayerTier = args.tier
-              modData.PlayerTierValue = args.tierValue or 1
-              modData.TierSetManually = true
-              player:Say("Your tier has been loaded: " .. args.tier)
-          elseif player and player:getUsername() == args.username then
-              player:Say("No tier data found on server.")
-          end
-      elseif command == "loadSurvivedHoursResponse" then
-          -- Handle loaded survival hours and zombie kills
-          local player = getPlayer()
-          if player and player:getUsername() == args.username then
-              -- Update player stats with data from server
-              PlayerTierHandler.updatePlayerStats(player, args.hours, args.zombieKills)
+  if module ~= "PlayerTierHandler" then
+    return
+  end
 
-              -- Force update tier based on new stats
-              PlayerTierHandler.updatePlayerTier(player, true) -- Pass true to force update
+  local player = getPlayer()
+  if not player then
+    return
+  end
 
-              local survivalDays = math.floor(args.hours / 24)
-              player:Say("Data loaded from server: " .. survivalDays .. " days survived and " .. args.zombieKills .. " zombie kills.")
-              player:Say("Your tier is now: " .. PlayerTierHandler.getPlayerTier(player))
-          end
-      end
+  if command == "tierSetResponse" then
+    player:Say(args.message)
+  elseif command == "tierUpdated" then
+    local modData = player:getModData()
+    local previousTierValue = PlayerTierHandler.getPlayerTierValue(player)
+    modData.PlayerTier = args.tier
+    modData.PlayerTierValue = safeNumber(args.tierValue, 1)
+    addTierFlagOnUpgrade(player, previousTierValue, args.tier, args.tierValue)
+    mergeHighestTierFlagValue(modData, args.highestTierFlagName, args.highestTierFlagValue)
+    modData.TierSetManually = true
+    player:Say(args.message)
+    PlayerTierHandler.syncTierSnapshot(player, true)
+  elseif command == "loadPlayerTierResponse" then
+    applyServerTierSnapshot(player, args, true)
+  elseif command == "loadSurvivedHoursResponse" then
+    applyServerTierSnapshot(player, args, true)
+  elseif command == "tierSnapshotResponse" then
+    applyServerTierSnapshot(player, args, false)
+  elseif command == "saveSurvivedHoursResponse" then
+    applyServerTierSnapshot(player, args, false)
   end
 end)
 
 -- Hook into the EVERY DAY event to give XP boost based on tier and update tier based on survival days
 Events.EveryHours.Add(function()
-  if isServer() then return end
-  local players = getOnlinePlayers()
-  for i = 0, players:size() - 1 do
-      local player = players:get(i)
-      PlayerTierHandler.updatePlayerTier(player)
-      PlayerTierHandler.giveXPBoost(player)
+  if isServer and isServer() then
+    return
   end
+
+  local player = getPlayer()
+  if not player then
+    return
+  end
+
+  local wasUpdated = PlayerTierHandler.updatePlayerTier(player)
+  PlayerTierHandler.giveXPBoost(player)
+  PlayerTierHandler.syncTierSnapshot(player, wasUpdated)
 end)
 
 -- Hook into the context menu event for admins and players
 Events.OnFillWorldObjectContextMenu.Add(PlayerTierHandler.addAdminMenu)
 Events.OnFillWorldObjectContextMenu.Add(PlayerTierHandler.addPlayerTierMenu)
 
-Events.OnCreatePlayer.Add(
-    PlayerTierHandler.updateTierAndGiveXPBoost(getPlayer())
-)
+Events.EveryTenMinutes.Add(function()
+  if not isClient or not isClient() then
+    return
+  end
+
+  local player = getPlayer()
+  if player then
+    PlayerTierHandler.syncTierSnapshot(player, false)
+  end
+end)
+
+Events.OnCreatePlayer.Add(function(playerIndex, playerObj)
+  local player = playerObj or getSpecificPlayer(playerIndex) or getPlayer()
+  if not player then
+    return
+  end
+
+  if PlayerTitleHandler and PlayerTitleHandler.requestPlayerTitle then
+    PlayerTitleHandler.requestPlayerTitle(player, true)
+  end
+
+  PlayerTierHandler.requestTierSnapshot(player, true)
+  PlayerTierHandler.syncTierSnapshot(player, true)
+end)
 
 -- Function to test book XP bonus (for console use)
 function PlayerTierHandler.testBookBonus(skillName)
@@ -908,8 +1338,5 @@ function PlayerTierHandler.checkActiveBookBonuses()
     player:Say("No active book bonuses")
   end
 end
-
-
-
 
 return PlayerTierHandler

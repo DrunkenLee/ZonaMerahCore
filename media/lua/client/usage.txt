@@ -30,8 +30,8 @@ PlayerFlagHandler.setFlagOnPlayer("tester1", "godmode_allow", true)
 
 
 
-getPlayer():setHoursSurvived(0)
-getPlayer():setZombieKills(0)
+getPlayer():setHoursSurvived(10000)
+getPlayer():setZombieKills(100000)
 
 
 

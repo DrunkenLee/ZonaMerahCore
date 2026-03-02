@@ -83,7 +83,9 @@ local function applyZMOutfitLoot()
         { "Base.Sapphire", 5 },
         { "Base.Amethyst", 5 },
         { "ZM_Mungkinkah.JessicaPill_OakRemedy", 2 },
-        { "ZM_Mungkinkah.ZM_MysticOrb", 0.3 }
+        { "ZM_Mungkinkah.ZM_MysticOrb", 0.3 },
+        { "AFKJUALAN.LegendWeaponBlueprint", 0.2 },
+        { "NoMi.GomuGomuNoMi", 1 }
     })
 
     -- Screamer1 outfit
@@ -94,8 +96,9 @@ local function applyZMOutfitLoot()
         { "Base.Sapphire", 20 },
         { "Base.Amethyst", 20 },
         { "ZM_Mungkinkah.JessicaPill_OakRemedy", 5 },
-        { "ZM_Mungkinkah.ZM_MysticOrb", 5 }
-
+        { "ZM_Mungkinkah.ZM_MysticOrb", 5 },
+        { "AFKJUALAN.LegendWeaponBlueprint", 1 },
+        { "Base.WeaponInfuseTicket1", 1 }
     }, { rolls = 1 })
 
     -- Screamer2 outfit
@@ -106,7 +109,104 @@ local function applyZMOutfitLoot()
         { "Base.Sapphire", 20 },
         { "Base.Amethyst", 20 },
         { "ZM_Mungkinkah.JessicaPill_OakRemedy", 5 },
-        { "ZM_Mungkinkah.ZM_MysticOrb", 5 }
+        { "ZM_Mungkinkah.ZM_MysticOrb", 5 },
+        { "AFKJUALAN.LegendWeaponBlueprint", 1 },
+        { "Base.WeaponInfuseTicket1", 1 },
+        { "NoMi.GomuGomuNoMi", 1 },
+        { "NoMi.BaraBaraNoMi", 1 },
+        { "NoMi.MeraMeraNoMi", 1 },
+        { "NoMi.GuraGuraNoMi", 1 }
+    }, { rolls = 1 })
+
+    -- Elite2 (ArmyCamoDesert outfit)
+    ZM_SetDistributions.addOutfitLoot("ArmyCamoDesert", {
+        { "NoMi.YamiYamiNoMi", 1 }
+    }, { rolls = 1 })
+
+    -- Bandit_Late outfit
+    ZM_SetDistributions.addOutfitLoot("Bandit_Late", {
+
+        { "NoMi.BaraBaraNoMi", 5 },
+        { "NoMi.MeraMeraNoMi", 5 },
+        { "NoMi.GuraGuraNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- Bandit_Mid outfit
+    ZM_SetDistributions.addOutfitLoot("Bandit_Mid", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- Biker outfit
+    ZM_SetDistributions.addOutfitLoot("Biker", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- MonsterBride outfit
+    ZM_SetDistributions.addOutfitLoot("CostumeMonsterBride", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- BankRobber outfit
+    ZM_SetDistributions.addOutfitLoot("BankRobberSuit", {
+        { "NoMi.NekoNekoNoMi", 5 },
+        { "NoMi.MochiMochiNoMi", 5 },
+        { "NoMi.GoroGoroNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- BountyHunter outfit
+    ZM_SetDistributions.addOutfitLoot("BountyHunter", {
+        { "NoMi.GomuGomuNoMi", 5 },
+        { "NoMi.YamiYamiNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- BeastMom outfit
+    ZM_SetDistributions.addOutfitLoot("CostumeBeastMom", {
+        { "NoMi.GomuGomuNoMi", 5 },
+        { "NoMi.YamiYamiNoMi", 5 },
+        { "NoMi.NikyuNikyuNoMi", 5 },
+        { "NoMi.OpeOpeNoMi", 5 },
+        { "NoMi.BaraBaraNoMi", 5 },
+        { "NoMi.MeraMeraNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- Chunk outfit
+    ZM_SetDistributions.addOutfitLoot("CostumeChunk", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- CommandoJohn outfit
+    ZM_SetDistributions.addOutfitLoot("CostumeCommandoJohn", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- Ghillie outfit
+    ZM_SetDistributions.addOutfitLoot("Ghillie", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- Hunter outfit
+    ZM_SetDistributions.addOutfitLoot("Hunter", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- IceHockey_White outfit
+    ZM_SetDistributions.addOutfitLoot("IceHockey_White", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- IceHockey_White_Goalie outfit
+    ZM_SetDistributions.addOutfitLoot("IceHockey_White_Goalie", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- Punk outfit
+    ZM_SetDistributions.addOutfitLoot("Punk", {
+        { "NoMi.GomuGomuNoMi", 5 }
+    }, { rolls = 1 })
+
+    -- Nightmares (StripperNaked outfit)
+    ZM_SetDistributions.addOutfitLoot("StripperNaked", {
+        { "NoMi.GomuGomuNoMi", 5 }
     }, { rolls = 1 })
 end
 

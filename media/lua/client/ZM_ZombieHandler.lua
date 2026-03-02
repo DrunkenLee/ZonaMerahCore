@@ -3,7 +3,7 @@ ZM_ZombieHandler = ZM_ZombieHandler or {}
 -- Zombie type definitions
 ZM_ZombieHandler.ZombieTypes = {
     ["elite"] = {
-        health = 400,
+        health = 1000,
         strength = 100,
         fitness = 4,
         walkType = "WTSprint2",
